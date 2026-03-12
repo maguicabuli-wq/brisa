@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, Animated,
   Dimensions, SafeAreaView,
@@ -6,97 +6,94 @@ import {
 import Colors from '../constants/colors';
 import { useApp } from '../context/AppContext';
 
-const { width } = Dimensions.get('window');
-const BUTTON_SIZE = width * 0.48;
+const { width, height } = Dimensions.get('window');
+const BUTTON_SIZE = width * 0.52;
 
 export default function HomeScreen({ navigation }) {
-  const { t, streak, logs, refreshLogs, refreshStreak } = useApp();
-  const pulseAnim = new Animated.Value(1);
-  const [greeting, setGreeting] = useState('');
+  const { refreshLogs, refreshStreak } = useApp();
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const glowAnim = useRef(new Animated.Value(0.3)).current;
+  const floatAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     refreshLogs();
     refreshStreak();
-    // Time-based greeting
-    const hour = new Date().getHours();
-    if (hour < 12) setGreeting('Buenos días');
-    else if (hour < 18) setGreeting('Buenas tardes');
-    else setGreeting('Buenas noches');
   }, []);
 
-  // Gentle pulse animation for main button
+  // Gentle pulse animation
   useEffect(() => {
     const pulse = Animated.loop(
       Animated.sequence([
-        Animated.timing(pulseAnim, { toValue: 1.04, duration: 2000, useNativeDriver: true }),
-        Animated.timing(pulseAnim, { toValue: 1, duration: 2000, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1.06, duration: 3000, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 3000, useNativeDriver: true }),
       ])
     );
     pulse.start();
     return () => pulse.stop();
   }, []);
 
-  const lastLog = logs[0];
-  const lastLogTime = lastLog
-    ? new Date(lastLog.timestamp).toLocaleDateString('es-ES', {
-        day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
-      })
-    : null;
+  // Soft glow animation
+  useEffect(() => {
+    const glow = Animated.loop(
+      Animated.sequence([
+        Animated.timing(glowAnim, { toValue: 0.6, duration: 3500, useNativeDriver: true }),
+        Animated.timing(glowAnim, { toValue: 0.3, duration: 3500, useNativeDriver: true }),
+      ])
+    );
+    glow.start();
+    return () => glow.stop();
+  }, []);
+
+  // Floating animation
+  useEffect(() => {
+    const float = Animated.loop(
+      Animated.sequence([
+        Animated.timing(floatAnim, { toValue: -8, duration: 4000, useNativeDriver: true }),
+        Animated.timing(floatAnim, { toValue: 0, duration: 4000, useNativeDriver: true }),
+      ])
+    );
+    float.start();
+    return () => float.stop();
+  }, []);
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.greeting}>{greeting} 🌿</Text>
-          <Text style={styles.question}>{t('homeQuestion')}</Text>
-        </View>
-        {streak.currentStreak > 0 && (
-          <View style={styles.streakBadge}>
-            <Text style={styles.streakNumber}>{streak.currentStreak}</Text>
-            <Text style={styles.streakLabel}>{t('homeStreak')}</Text>
-          </View>
-        )}
-      </View>
+      {/* Centered calming content */}
+      <View style={styles.centerContent}>
+        {/* Subtle ambient text */}
+        <Animated.Text style={[styles.brandName, { opacity: glowAnim }]}>
+          brisa
+        </Animated.Text>
 
-      {/* Main Button */}
-      <View style={styles.mainSection}>
+        {/* Main register button with calming animation */}
         <TouchableOpacity
           activeOpacity={0.8}
           onPress={() => navigation.navigate('LogFlow')}
         >
           <Animated.View style={[
+            styles.outerGlow,
+            {
+              opacity: glowAnim,
+              transform: [{ scale: pulseAnim }, { translateY: floatAnim }],
+            },
+          ]} />
+          <Animated.View style={[
             styles.mainButton,
-            { transform: [{ scale: pulseAnim }] },
+            {
+              transform: [{ scale: pulseAnim }, { translateY: floatAnim }],
+            },
           ]}>
             <View style={styles.mainButtonInner}>
-              <Text style={styles.mainButtonIcon}>🍃</Text>
-              <Text style={styles.mainButtonText}>{t('homeMainButton')}</Text>
+              <Text style={styles.mainButtonIcon}>~</Text>
+              <Text style={styles.mainButtonText}>Registrar</Text>
             </View>
           </Animated.View>
         </TouchableOpacity>
 
-        {lastLogTime && (
-          <Text style={styles.lastLog}>
-            {t('homeLastLog')}: {lastLogTime}
-          </Text>
-        )}
-      </View>
-
-      {/* Quick stats */}
-      <View style={styles.statsRow}>
-        <View style={styles.statCard}>
-          <Text style={styles.statNumber}>{logs.length}</Text>
-          <Text style={styles.statLabel}>{t('profileLogs')}</Text>
-        </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statNumber}>{streak.currentStreak}</Text>
-          <Text style={styles.statLabel}>{t('profileStreak')}</Text>
-        </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statNumber}>{streak.longestStreak}</Text>
-          <Text style={styles.statLabel}>Mejor racha</Text>
-        </View>
+        {/* Calming subtitle */}
+        <Animated.Text style={[styles.subtitle, { opacity: glowAnim }]}>
+          toca cuando quieras
+        </Animated.Text>
       </View>
     </SafeAreaView>
   );
@@ -107,44 +104,27 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    paddingHorizontal: 24,
-    paddingTop: 20,
-  },
-  greeting: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: Colors.text,
-  },
-  question: {
-    fontSize: 18,
-    color: Colors.textLight,
-    marginTop: 4,
-  },
-  streakBadge: {
-    backgroundColor: Colors.accentSoft,
-    borderRadius: 16,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    alignItems: 'center',
-  },
-  streakNumber: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: Colors.primary,
-  },
-  streakLabel: {
-    fontSize: 10,
-    color: Colors.textLight,
-    marginTop: 2,
-  },
-  mainSection: {
+  centerContent: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  brandName: {
+    fontSize: 18,
+    fontWeight: '300',
+    color: Colors.textMuted,
+    letterSpacing: 6,
+    textTransform: 'lowercase',
+    marginBottom: 48,
+  },
+  outerGlow: {
+    position: 'absolute',
+    width: BUTTON_SIZE + 30,
+    height: BUTTON_SIZE + 30,
+    borderRadius: (BUTTON_SIZE + 30) / 2,
+    backgroundColor: Colors.primaryLight,
+    left: -15,
+    top: -15,
   },
   mainButton: {
     width: BUTTON_SIZE,
@@ -154,9 +134,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.25,
-    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.2,
+    shadowRadius: 30,
     elevation: 8,
   },
   mainButtonInner: {
@@ -168,42 +148,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   mainButtonIcon: {
-    fontSize: 36,
-    marginBottom: 4,
+    fontSize: 32,
+    color: Colors.textOnPrimary,
+    fontWeight: '300',
+    marginBottom: 2,
   },
   mainButtonText: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 18,
+    fontWeight: '600',
     color: Colors.textOnPrimary,
+    letterSpacing: 1,
   },
-  lastLog: {
-    fontSize: 13,
+  subtitle: {
+    fontSize: 14,
+    fontWeight: '300',
     color: Colors.textMuted,
-    marginTop: 20,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-    gap: 12,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: Colors.card,
-    borderRadius: 16,
-    padding: 16,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  statNumber: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: Colors.primary,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: Colors.textMuted,
-    marginTop: 4,
+    marginTop: 40,
+    letterSpacing: 2,
   },
 });

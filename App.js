@@ -18,19 +18,24 @@ import LogFlowScreen from './src/screens/LogFlowScreen';
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
-// Tab icons using text (no external icon library needed)
+// Softer, calming tab icons (simple unicode symbols)
 const TAB_ICONS = {
-  Home: '🏠',
-  Data: '📊',
-  Journal: '📝',
-  Chat: '🌿',
-  Profile: '👤',
+  Home: { icon: '\u2302', label: 'Inicio' },       // ⌂ house
+  Data: { icon: '\u25CB', label: 'Datos' },         // ○ circle
+  Journal: { icon: '\u2661', label: 'Diario' },     // ♡ heart
+  Chat: { icon: '\u2740', label: 'Chat' },          // ❀ flower
+  Profile: { icon: '\u2726', label: 'Perfil' },     // ✦ star
 };
 
 function TabIcon({ name, focused }) {
   return (
     <View style={[styles.tabIcon, focused && styles.tabIconActive]}>
-      <Text style={styles.tabEmoji}>{TAB_ICONS[name]}</Text>
+      <Text style={[
+        styles.tabSymbol,
+        focused ? styles.tabSymbolActive : styles.tabSymbolInactive,
+      ]}>
+        {TAB_ICONS[name].icon}
+      </Text>
     </View>
   );
 }
@@ -49,12 +54,13 @@ function MainTabs() {
           borderTopWidth: 1,
           paddingTop: 8,
           paddingBottom: 8,
-          height: 80,
+          height: 76,
         },
         tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: '500',
+          fontSize: 10,
+          fontWeight: '400',
           marginTop: 2,
+          letterSpacing: 0.5,
         },
       })}
     >
@@ -87,16 +93,22 @@ export default function App() {
 
 const styles = StyleSheet.create({
   tabIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
   },
   tabIconActive: {
     backgroundColor: Colors.primaryLight,
   },
-  tabEmoji: {
-    fontSize: 18,
+  tabSymbol: {
+    fontSize: 20,
+  },
+  tabSymbolActive: {
+    color: Colors.primary,
+  },
+  tabSymbolInactive: {
+    color: Colors.textMuted,
   },
 });
