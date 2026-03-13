@@ -505,11 +505,12 @@ function OptionButton({ label, onPress, selected, icon, small, secondary }) {
 
 const optBtnStyles = StyleSheet.create({
   button: {
-    backgroundColor: Colors.card, borderRadius: 16, paddingVertical: 18, paddingHorizontal: 24,
+    backgroundColor: Colors.card, borderRadius: 24, paddingVertical: 20, paddingHorizontal: 24,
     marginVertical: 6, borderWidth: 1.5, borderColor: Colors.border, flexDirection: 'row', alignItems: 'center',
+    shadowColor: Colors.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 1, shadowRadius: 8, elevation: 2,
   },
-  selected: { backgroundColor: Colors.primaryLight, borderColor: Colors.primary },
-  small: { paddingVertical: 12, paddingHorizontal: 18, borderRadius: 12, marginVertical: 4 },
+  selected: { backgroundColor: Colors.primaryLight, borderColor: Colors.primary, shadowColor: Colors.primary, shadowOpacity: 0.15 },
+  small: { paddingVertical: 14, paddingHorizontal: 18, borderRadius: 20, marginVertical: 4 },
   secondary: { backgroundColor: 'transparent', borderColor: Colors.border, borderStyle: 'dashed' },
   icon: { fontSize: 20, marginRight: 12 },
   label: { fontSize: 16, fontWeight: '500', color: Colors.text, flex: 1 },
@@ -518,22 +519,39 @@ const optBtnStyles = StyleSheet.create({
   labelSecondary: { color: Colors.textLight, fontStyle: 'italic' },
 });
 
-// --- ScaleSlider ---
+// --- ScaleSlider (Headspace-style, big round bubbles) ---
+const SCALE_COLORS = [
+  '#7DA67D', '#8DB88D', '#A8C8A0', '#C5D9A0', '#E0E8A0',
+  '#F0E0A0', '#F0D090', '#E8B86D', '#D4845A', '#D47E7E', '#C06060',
+];
+
 function ScaleSlider({ label, value, onChange, leftLabel, rightLabel, min = 0, max = 10 }) {
   const numbers = Array.from({ length: max - min + 1 }, (_, i) => min + i);
   return (
     <View style={scaleStyles.container}>
       {label && <Text style={scaleStyles.label}>{label}</Text>}
+      {/* Big selected value display */}
+      <View style={[scaleStyles.bigCircle, { backgroundColor: SCALE_COLORS[value] || Colors.primary }]}>
+        <Text style={scaleStyles.bigNumber}>{value}</Text>
+      </View>
       <View style={scaleStyles.row}>
-        {numbers.map((num) => (
-          <TouchableOpacity
-            key={num}
-            style={[scaleStyles.dot, num === value && scaleStyles.dotActive, num <= value && scaleStyles.dotFilled]}
-            onPress={() => onChange(num)}
-          >
-            <Text style={[scaleStyles.dotText, num === value && scaleStyles.dotTextActive]}>{num}</Text>
-          </TouchableOpacity>
-        ))}
+        {numbers.map((num) => {
+          const isSelected = num === value;
+          const isFilled = num <= value;
+          return (
+            <TouchableOpacity
+              key={num}
+              style={[
+                scaleStyles.dot,
+                isFilled && { backgroundColor: SCALE_COLORS[num], borderColor: SCALE_COLORS[num] },
+                isSelected && scaleStyles.dotActive,
+              ]}
+              onPress={() => onChange(num)}
+            >
+              <Text style={[scaleStyles.dotText, (isFilled || isSelected) && scaleStyles.dotTextFilled]}>{num}</Text>
+            </TouchableOpacity>
+          );
+        })}
       </View>
       <View style={scaleStyles.labelsRow}>
         <Text style={scaleStyles.edgeLabel}>{leftLabel}</Text>
@@ -544,19 +562,20 @@ function ScaleSlider({ label, value, onChange, leftLabel, rightLabel, min = 0, m
 }
 
 const scaleStyles = StyleSheet.create({
-  container: { marginVertical: 16 },
-  label: { fontSize: 16, fontWeight: '500', color: Colors.text, marginBottom: 16, textAlign: 'center' },
-  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 4 },
+  container: { marginVertical: 20, alignItems: 'center' },
+  label: { fontSize: 18, fontWeight: '600', color: Colors.text, marginBottom: 20, textAlign: 'center', lineHeight: 26 },
+  bigCircle: { width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center', marginBottom: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 12, elevation: 6 },
+  bigNumber: { fontSize: 32, fontWeight: '700', color: '#FFFFFF' },
+  row: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap', gap: 8, paddingHorizontal: 8 },
   dot: {
-    width: 30, height: 30, borderRadius: 15, backgroundColor: Colors.surface,
-    alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: Colors.border,
+    width: 40, height: 40, borderRadius: 20, backgroundColor: Colors.surface,
+    alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: Colors.border,
   },
-  dotActive: { backgroundColor: Colors.primary, borderColor: Colors.primary, transform: [{ scale: 1.2 }] },
-  dotFilled: { borderColor: Colors.primaryLight, backgroundColor: Colors.primaryLight },
-  dotText: { fontSize: 12, fontWeight: '600', color: Colors.textLight },
-  dotTextActive: { color: Colors.textOnPrimary },
-  labelsRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 8, paddingHorizontal: 4 },
-  edgeLabel: { fontSize: 12, color: Colors.textMuted },
+  dotActive: { transform: [{ scale: 1.15 }], shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 6, elevation: 4 },
+  dotText: { fontSize: 14, fontWeight: '600', color: Colors.textLight },
+  dotTextFilled: { color: '#FFFFFF' },
+  labelsRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 16, paddingHorizontal: 8, width: '100%' },
+  edgeLabel: { fontSize: 13, color: Colors.textMuted, fontWeight: '400' },
 });
 
 // --- VoiceInput ---
@@ -790,21 +809,28 @@ const homeStyles = StyleSheet.create({
 });
 
 
-// --- Simple Bar Chart (replaces react-native-chart-kit) ---
-function SimpleBarChart({ labels, data, height = 150 }) {
+// --- Pretty Bar Chart (Headspace-style, rounded, gradient colors) ---
+const CHART_COLORS = ['#E8B298', '#D4845A', '#B86B42', '#8B9E8B', '#C5D4C5', '#E8B86D', '#D47E7E', '#7DA67D'];
+
+function SimpleBarChart({ labels, data, height = 160 }) {
   const max = Math.max(...data, 1);
   return (
-    <View style={{ backgroundColor: Colors.card, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: Colors.border }}>
-      <View style={{ flexDirection: 'row', alignItems: 'flex-end', height, gap: 4 }}>
-        {data.map((val, i) => (
-          <View key={i} style={{ flex: 1, alignItems: 'center', justifyContent: 'flex-end', height: '100%' }}>
-            <View style={{ width: '70%', height: `${(val / max) * 100}%`, backgroundColor: Colors.primary, borderRadius: 4, minHeight: val > 0 ? 4 : 0 }} />
-          </View>
-        ))}
+    <View style={{ backgroundColor: Colors.card, borderRadius: 24, padding: 20, borderWidth: 1, borderColor: Colors.border, shadowColor: Colors.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 1, shadowRadius: 8, elevation: 3 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'flex-end', height, gap: 6 }}>
+        {data.map((val, i) => {
+          const barColor = CHART_COLORS[i % CHART_COLORS.length];
+          const pct = max > 0 ? (val / max) * 100 : 0;
+          return (
+            <View key={i} style={{ flex: 1, alignItems: 'center', justifyContent: 'flex-end', height: '100%' }}>
+              {val > 0 && <Text style={{ fontSize: 10, fontWeight: '600', color: barColor, marginBottom: 4 }}>{val}</Text>}
+              <View style={{ width: '65%', height: `${pct}%`, backgroundColor: barColor, borderRadius: 10, minHeight: val > 0 ? 6 : 0, opacity: 0.85 }} />
+            </View>
+          );
+        })}
       </View>
-      <View style={{ flexDirection: 'row', marginTop: 8 }}>
+      <View style={{ flexDirection: 'row', marginTop: 10 }}>
         {labels.map((l, i) => (
-          <Text key={i} style={{ flex: 1, textAlign: 'center', fontSize: 10, color: Colors.textMuted }}>{l}</Text>
+          <Text key={i} style={{ flex: 1, textAlign: 'center', fontSize: 10, color: Colors.textMuted, fontWeight: '500' }}>{l}</Text>
         ))}
       </View>
     </View>
@@ -900,7 +926,7 @@ const dataStyles = StyleSheet.create({
   emptyIcon: { fontSize: 48, marginBottom: 16, color: Colors.textMuted },
   emptyText: { fontSize: 16, color: Colors.textLight, textAlign: 'center', lineHeight: 24 },
   summaryRow: { flexDirection: 'row', paddingHorizontal: 24, gap: 12, marginBottom: 24 },
-  summaryCard: { flex: 1, backgroundColor: Colors.card, borderRadius: 16, padding: 16, alignItems: 'center', borderWidth: 1, borderColor: Colors.border },
+  summaryCard: { flex: 1, backgroundColor: Colors.card, borderRadius: 24, padding: 18, alignItems: 'center', borderWidth: 1, borderColor: Colors.border, shadowColor: Colors.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 1, shadowRadius: 8, elevation: 2 },
   summaryNumber: { fontSize: 24, fontWeight: '700', color: Colors.primary },
   summaryLabel: { fontSize: 11, color: Colors.textMuted, marginTop: 4, textAlign: 'center' },
   section: { paddingHorizontal: 24, marginBottom: 28 },
@@ -908,8 +934,8 @@ const dataStyles = StyleSheet.create({
   chart: { borderRadius: 16, paddingRight: 0 },
   barItem: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
   barLabel: { width: 90, fontSize: 14, color: Colors.text },
-  barTrack: { flex: 1, height: 10, backgroundColor: Colors.surface, borderRadius: 5, marginHorizontal: 8, overflow: 'hidden' },
-  barFill: { height: '100%', backgroundColor: Colors.primary, borderRadius: 5 },
+  barTrack: { flex: 1, height: 12, backgroundColor: Colors.surface, borderRadius: 6, marginHorizontal: 8, overflow: 'hidden' },
+  barFill: { height: '100%', backgroundColor: Colors.accent, borderRadius: 6 },
   barCount: { width: 30, fontSize: 14, fontWeight: '600', color: Colors.textLight, textAlign: 'right' },
 });
 
@@ -1391,8 +1417,8 @@ const logStyles = StyleSheet.create({
   stepMessage: { fontSize: 16, color: Colors.text, textAlign: 'center', lineHeight: 26, marginBottom: 28 },
   blockerButtons: { gap: 8 },
   yesNoRow: { flexDirection: 'row', gap: 16, justifyContent: 'center' },
-  yesNoButton: { flex: 1, paddingVertical: 20, backgroundColor: Colors.card, borderRadius: 20, alignItems: 'center', borderWidth: 1.5, borderColor: Colors.border },
-  yesNoActive: { backgroundColor: Colors.primaryLight, borderColor: Colors.primary },
+  yesNoButton: { flex: 1, paddingVertical: 24, backgroundColor: Colors.card, borderRadius: 28, alignItems: 'center', borderWidth: 1.5, borderColor: Colors.border, shadowColor: Colors.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 1, shadowRadius: 8, elevation: 2 },
+  yesNoActive: { backgroundColor: Colors.primaryLight, borderColor: Colors.primary, shadowColor: Colors.primary, shadowOpacity: 0.15 },
   yesNoText: { fontSize: 18, fontWeight: '600', color: Colors.text },
   yesNoTextActive: { color: Colors.primaryDark },
   messageIcon: { fontSize: 36, textAlign: 'center', marginBottom: 20, color: Colors.primary },
@@ -1427,11 +1453,11 @@ const logStyles = StyleSheet.create({
 // NAVIGATION (Simple state-based, no dependencies)
 // ============================================================
 const TABS = [
-  { key: 'Home', icon: '\u2302', label: 'Inicio' },
-  { key: 'Data', icon: '\u25CB', label: 'Datos' },
+  { key: 'Data', icon: '\u2022\u2022\u2022', label: 'Datos' },
   { key: 'Journal', icon: '\u2661', label: 'Diario' },
-  { key: 'Chat', icon: '\u2740', label: 'Chat' },
-  { key: 'Profile', icon: '\u2726', label: 'Perfil' },
+  { key: 'Home', icon: '~', label: 'Inicio', isMain: true },
+  { key: 'Chat', icon: '\u2026', label: 'Chat' },
+  { key: 'Profile', icon: '\u25E6', label: 'Perfil' },
 ];
 
 const SCREENS = { Home: HomeScreen, Data: DataScreen, Journal: JournalScreen, Chat: ChatScreen, Profile: ProfileScreen };
@@ -1451,12 +1477,21 @@ export default function App() {
         <View style={tabStyles.bar}>
           {TABS.map((tab) => {
             const focused = activeTab === tab.key;
+            if (tab.isMain) {
+              return (
+                <TouchableOpacity key={tab.key} style={tabStyles.tab} onPress={() => setActiveTab(tab.key)}>
+                  <View style={[tabStyles.mainIcon, focused && tabStyles.mainIconActive]}>
+                    <Text style={tabStyles.mainSymbol}>{tab.icon}</Text>
+                  </View>
+                  {focused && <View style={tabStyles.activeDot} />}
+                </TouchableOpacity>
+              );
+            }
             return (
               <TouchableOpacity key={tab.key} style={tabStyles.tab} onPress={() => setActiveTab(tab.key)}>
-                <View style={[tabStyles.tabIcon, focused && tabStyles.tabIconActive]}>
-                  <Text style={[tabStyles.tabSymbol, focused ? tabStyles.tabSymbolActive : tabStyles.tabSymbolInactive]}>{tab.icon}</Text>
-                </View>
+                <Text style={[tabStyles.tabSymbol, focused ? tabStyles.tabSymbolActive : tabStyles.tabSymbolInactive]}>{tab.icon}</Text>
                 <Text style={[tabStyles.tabLabel, focused && tabStyles.tabLabelActive]}>{tab.label}</Text>
+                {focused && <View style={tabStyles.activeDot} />}
               </TouchableOpacity>
             );
           })}
@@ -1471,13 +1506,15 @@ export default function App() {
 }
 
 const tabStyles = StyleSheet.create({
-  bar: { flexDirection: 'row', backgroundColor: Colors.card, borderTopColor: Colors.divider, borderTopWidth: 1, paddingTop: 8, paddingBottom: 8, height: 76 },
+  bar: { flexDirection: 'row', backgroundColor: Colors.card, borderTopColor: Colors.divider, borderTopWidth: 1, paddingTop: 6, paddingBottom: 10, height: 80, alignItems: 'center' },
   tab: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  tabIcon: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  tabIconActive: { backgroundColor: Colors.primaryLight },
-  tabSymbol: { fontSize: 20 },
+  mainIcon: { width: 52, height: 52, borderRadius: 26, backgroundColor: Colors.primaryLight, alignItems: 'center', justifyContent: 'center', marginTop: -18, shadowColor: Colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 12, elevation: 6 },
+  mainIconActive: { backgroundColor: Colors.primary },
+  mainSymbol: { fontSize: 24, fontWeight: '300', color: Colors.textOnPrimary },
+  tabSymbol: { fontSize: 16, fontWeight: '300', letterSpacing: 2 },
   tabSymbolActive: { color: Colors.primary },
-  tabSymbolInactive: { color: Colors.textMuted },
-  tabLabel: { fontSize: 10, fontWeight: '400', marginTop: 2, letterSpacing: 0.5, color: Colors.textMuted },
-  tabLabelActive: { color: Colors.primary },
+  tabSymbolInactive: { color: Colors.textMuted, opacity: 0.6 },
+  tabLabel: { fontSize: 9, fontWeight: '400', marginTop: 3, letterSpacing: 1, color: Colors.textMuted, opacity: 0.6 },
+  tabLabelActive: { color: Colors.primary, opacity: 1 },
+  activeDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: Colors.primary, marginTop: 4 },
 });
