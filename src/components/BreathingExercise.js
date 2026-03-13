@@ -18,57 +18,63 @@ const generateParticles = () =>
     opacity: 0.3 + Math.random() * 0.7,
   }));
 
-export default function BreathingExercise({ duration = 6, onComplete }) {
+/*
+  Breathing pattern:
+    - Inhale: 4 seconds
+    - Exhale: 6 seconds
+    - 3 cycles total = 30 seconds
+*/
+const INHALE_MS = 4000;
+const EXHALE_MS = 6000;
+const CYCLE_MS = INHALE_MS + EXHALE_MS; // 10s per cycle
+const TOTAL_CYCLES = 3;
+const TOTAL_DURATION = TOTAL_CYCLES * (CYCLE_MS / 1000); // 30 seconds
+
+export default function BreathingExercise({ onComplete }) {
   const { t } = useApp();
-  const [phase, setPhase] = useState('ready'); // ready, inhale, hold, exhale, done
-  const [timeLeft, setTimeLeft] = useState(duration);
+  const [phase, setPhase] = useState('ready'); // ready, inhale, exhale, done
+  const [timeLeft, setTimeLeft] = useState(TOTAL_DURATION);
   const [started, setStarted] = useState(false);
+  const [cycleCount, setCycleCount] = useState(0);
   const scale = useRef(new Animated.Value(0.4)).current;
   const glowOpacity = useRef(new Animated.Value(0.3)).current;
   const particleAnim = useRef(new Animated.Value(0)).current;
   const particles = useRef(generateParticles()).current;
 
-  // Breathing cycle: inhale 4s, hold 2s, exhale 4s (for 6s version: 2s, 1s, 3s)
-  const isShort = duration <= 6;
-  const inhaleTime = isShort ? 2000 : 4000;
-  const holdTime = isShort ? 1000 : 4000;
-  const exhaleTime = isShort ? 3000 : 7000;
-  const cycleTime = inhaleTime + holdTime + exhaleTime;
-
   useEffect(() => {
     if (!started) return;
 
-    let elapsed = 0;
+    let cyclesDone = 0;
     let timer;
 
     const runCycle = () => {
-      // Inhale
+      if (cyclesDone >= TOTAL_CYCLES) {
+        setPhase('done');
+        return;
+      }
+
+      // Inhale — 4 seconds
       setPhase('inhale');
+      setCycleCount(cyclesDone + 1);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
       Animated.parallel([
-        Animated.timing(scale, { toValue: 1, duration: inhaleTime, useNativeDriver: true }),
-        Animated.timing(glowOpacity, { toValue: 0.8, duration: inhaleTime, useNativeDriver: true }),
-        Animated.timing(particleAnim, { toValue: 1, duration: inhaleTime, useNativeDriver: true }),
+        Animated.timing(scale, { toValue: 1, duration: INHALE_MS, useNativeDriver: true }),
+        Animated.timing(glowOpacity, { toValue: 0.8, duration: INHALE_MS, useNativeDriver: true }),
+        Animated.timing(particleAnim, { toValue: 1, duration: INHALE_MS, useNativeDriver: true }),
       ]).start();
 
-      // Hold
+      // Exhale — 6 seconds (starts after inhale)
       timer = setTimeout(() => {
-        setPhase('hold');
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
-      }, inhaleTime);
-
-      // Exhale
-      setTimeout(() => {
         setPhase('exhale');
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
         Animated.parallel([
-          Animated.timing(scale, { toValue: 0.4, duration: exhaleTime, useNativeDriver: true }),
-          Animated.timing(glowOpacity, { toValue: 0.3, duration: exhaleTime, useNativeDriver: true }),
-          Animated.timing(particleAnim, { toValue: 0, duration: exhaleTime, useNativeDriver: true }),
+          Animated.timing(scale, { toValue: 0.4, duration: EXHALE_MS, useNativeDriver: true }),
+          Animated.timing(glowOpacity, { toValue: 0.3, duration: EXHALE_MS, useNativeDriver: true }),
+          Animated.timing(particleAnim, { toValue: 0, duration: EXHALE_MS, useNativeDriver: true }),
         ]).start();
-      }, inhaleTime + holdTime);
+      }, INHALE_MS);
 
-      elapsed += cycleTime;
+      cyclesDone++;
     };
 
     // Countdown timer
@@ -76,7 +82,6 @@ export default function BreathingExercise({ duration = 6, onComplete }) {
       setTimeLeft((prev) => {
         if (prev <= 1) {
           clearInterval(countdown);
-          setPhase('done');
           return 0;
         }
         return prev - 1;
@@ -85,12 +90,21 @@ export default function BreathingExercise({ duration = 6, onComplete }) {
 
     // Run breathing cycles
     runCycle();
-    const cycleInterval = setInterval(runCycle, cycleTime);
+    const cycleInterval = setInterval(() => {
+      runCycle();
+    }, CYCLE_MS);
+
+    // Auto-stop after all cycles
+    const stopTimeout = setTimeout(() => {
+      clearInterval(cycleInterval);
+      setPhase('done');
+    }, TOTAL_CYCLES * CYCLE_MS);
 
     return () => {
       clearInterval(countdown);
       clearInterval(cycleInterval);
       clearTimeout(timer);
+      clearTimeout(stopTimeout);
     };
   }, [started]);
 
@@ -102,7 +116,6 @@ export default function BreathingExercise({ duration = 6, onComplete }) {
 
   const phaseText =
     phase === 'inhale' ? t('breatheInhale') :
-    phase === 'hold' ? t('breatheHold') :
     phase === 'exhale' ? t('breatheExhale') :
     phase === 'done' ? t('breatheDone') :
     t('breatheReady');
@@ -111,6 +124,7 @@ export default function BreathingExercise({ duration = 6, onComplete }) {
     return (
       <View style={styles.container}>
         <Text style={styles.title}>{t('breatheTitle')}</Text>
+        <Text style={styles.instructions}>4s inhala  ~  6s exhala  ~  3 ciclos</Text>
         <TouchableOpacity style={styles.startButton} onPress={() => setStarted(true)}>
           <View style={styles.startCircle}>
             <Text style={styles.startText}>{t('breatheStart')}</Text>
@@ -123,7 +137,7 @@ export default function BreathingExercise({ duration = 6, onComplete }) {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>{t('breatheTitle')}</Text>
-      <Text style={styles.timer}>{timeLeft}s</Text>
+      <Text style={styles.timer}>{timeLeft}s  ~  {cycleCount}/{TOTAL_CYCLES}</Text>
 
       <View style={styles.circleContainer}>
         {/* Particle ring */}
@@ -192,13 +206,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   title: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '600',
     color: Colors.text,
+    marginBottom: 6,
+  },
+  instructions: {
+    fontSize: 13,
+    color: Colors.textMuted,
     marginBottom: 8,
+    letterSpacing: 1,
   },
   timer: {
-    fontSize: 16,
+    fontSize: 14,
     color: Colors.textMuted,
     marginBottom: 40,
   },

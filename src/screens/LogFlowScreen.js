@@ -73,10 +73,10 @@ const STEPS = {
   breakCheck: { type: 'breakCheck' },
 
   // Grounding messages
-  grounding1: { type: 'message', labelKey: 'groundingTouch', icon: '🌍' },
-  grounding2: { type: 'message', labelKey: 'groundingTest', icon: '🧠' },
-  grounding3: { type: 'message', labelKey: 'groundingAccept', icon: '🌊' },
-  grounding4: { type: 'message', labelKey: 'groundingIdentity', icon: '🦋' },
+  grounding1: { type: 'message', labelKey: 'groundingTouch', icon: '~' },
+  grounding2: { type: 'message', labelKey: 'groundingTest', icon: '~' },
+  grounding3: { type: 'message', labelKey: 'groundingAccept', icon: '~' },
+  grounding4: { type: 'message', labelKey: 'groundingIdentity', icon: '~' },
 
   // Celebration
   celebrate: { type: 'celebrate' },
@@ -88,7 +88,7 @@ const STEPS = {
   checkinCelebrate: { type: 'checkinCelebrate' },
 };
 
-// Path definitions
+// Path definitions — full comprehensive flows
 const PATH_A = [
   'feelScale', 'urgeScale', 'breatheShort', 'whereTouch', 'whereAreYou', 'whatDoing',
   'blocker', 'triggerBehavior', 'didPull', 'whatGot', 'observeIntro', 'sensations',
@@ -169,6 +169,10 @@ export default function LogFlowScreen({ navigation }) {
     setData((prev) => ({ ...prev, [key]: value }));
   };
 
+  const closeFlow = () => {
+    navigation.goBack();
+  };
+
   const finishLog = async () => {
     const log = {
       ...data,
@@ -192,17 +196,21 @@ export default function LogFlowScreen({ navigation }) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.closeRow}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={styles.closeButton}>✕</Text>
+          <TouchableOpacity
+            onPress={closeFlow}
+            style={styles.closeHitArea}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          >
+            <Text style={styles.closeButton}>{'\u2715'}</Text>
           </TouchableOpacity>
         </View>
         <View style={styles.content}>
           <Text style={styles.bigTitle}>{t('logTitle')}</Text>
           <View style={styles.optionsList}>
-            <OptionButton icon="🔴" label={t('logOptionA')} onPress={() => { setPath('A'); setStepIndex(0); }} />
-            <OptionButton icon="✅" label={t('logOptionB')} onPress={() => { setPath('B'); setStepIndex(0); }} />
-            <OptionButton icon="🤔" label={t('logOptionC')} onPress={() => { setPath('C'); setStepIndex(0); }} />
-            <OptionButton icon="👋" label={t('logOptionD')} onPress={() => { setPath('D'); setStepIndex(0); }} />
+            <OptionButton icon="" label={t('logOptionA')} onPress={() => { setPath('A'); setStepIndex(0); }} />
+            <OptionButton icon="" label={t('logOptionB')} onPress={() => { setPath('B'); setStepIndex(0); }} />
+            <OptionButton icon="" label={t('logOptionC')} onPress={() => { setPath('C'); setStepIndex(0); }} />
+            <OptionButton icon="" label={t('logOptionD')} onPress={() => { setPath('D'); setStepIndex(0); }} />
           </View>
         </View>
       </SafeAreaView>
@@ -334,7 +342,7 @@ export default function LogFlowScreen({ navigation }) {
             <Text style={styles.rideWave}>{t('rideTheWave')}</Text>
             <Text style={styles.stepMessage}>{t('blockerMessage')}</Text>
             <View style={styles.blockerButtons}>
-              <OptionButton label={t('foundOne')} icon="✅" onPress={goNext} />
+              <OptionButton label={t('foundOne')} onPress={goNext} />
               <OptionButton label={t('cantRightNow')} secondary onPress={goNext} />
             </View>
           </View>
@@ -409,7 +417,7 @@ export default function LogFlowScreen({ navigation }) {
       case 'celebrate':
         return (
           <View style={styles.celebrateContent}>
-            <Text style={styles.celebrateEmoji}>🎉</Text>
+            <Text style={styles.celebrateSymbol}>~</Text>
             <Text style={styles.celebrateTitle}>{t('youDidIt')}</Text>
             <Text style={styles.celebrateMessage}>{t('celebrate')}</Text>
             <Text style={styles.logSaved}>{t('logSaved')}</Text>
@@ -420,20 +428,19 @@ export default function LogFlowScreen({ navigation }) {
         return (
           <View style={styles.stepContent}>
             <Text style={styles.stepTitle}>{t('breatheOrFinish')}</Text>
-            <OptionButton icon="🌬️" label={t('doBreathing')} onPress={() => {
-              // Insert a breathing step and go to it, then celebrate
+            <OptionButton label={t('doBreathing')} onPress={() => {
               updateData('didBreathingEnd', true);
-              // Navigate to breathing, then on complete finish
               setData((prev) => ({ ...prev, _showBreathing: true }));
             }} />
-            <OptionButton icon="✅" label={t('finishLog')} secondary onPress={finishLog} />
+            <View style={{ height: 8 }} />
+            <OptionButton label={t('finishLog')} secondary onPress={finishLog} />
           </View>
         );
 
       case 'checkinCelebrate':
         return (
           <View style={styles.stepContent}>
-            <Text style={styles.celebrateEmoji}>🌟</Text>
+            <Text style={styles.celebrateSymbol}>~</Text>
             <Text style={styles.celebrateTitle}>{t('celebrateCheckin')}</Text>
           </View>
         );
@@ -469,8 +476,12 @@ export default function LogFlowScreen({ navigation }) {
     <SafeAreaView style={styles.container}>
       {/* Header with progress */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.closeButton}>✕</Text>
+        <TouchableOpacity
+          onPress={closeFlow}
+          style={styles.closeHitArea}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        >
+          <Text style={styles.closeButton}>{'\u2715'}</Text>
         </TouchableOpacity>
         <View style={styles.progressBar}>
           <View style={[styles.progressFill, { width: `${((stepIndex + 1) / steps.length) * 100}%` }]} />
@@ -557,10 +568,13 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     alignItems: 'flex-end',
   },
+  closeHitArea: {
+    padding: 8,
+  },
   closeButton: {
-    fontSize: 24,
-    color: Colors.textMuted,
-    padding: 4,
+    fontSize: 22,
+    color: Colors.textLight,
+    fontWeight: '300',
   },
   content: {
     flex: 1,
@@ -568,14 +582,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   bigTitle: {
-    fontSize: 32,
-    fontWeight: '700',
+    fontSize: 28,
+    fontWeight: '600',
     color: Colors.text,
     textAlign: 'center',
     marginBottom: 32,
   },
   optionsList: {
-    gap: 8,
+    gap: 10,
   },
   optionsGrid: {
     flexDirection: 'row',
@@ -592,7 +606,7 @@ const styles = StyleSheet.create({
   },
   progressBar: {
     flex: 1,
-    height: 4,
+    height: 3,
     backgroundColor: Colors.border,
     borderRadius: 2,
     overflow: 'hidden',
@@ -603,7 +617,7 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   stepCount: {
-    fontSize: 13,
+    fontSize: 12,
     color: Colors.textMuted,
     minWidth: 35,
     textAlign: 'right',
@@ -622,7 +636,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   stepTitle: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '600',
     color: Colors.text,
     marginBottom: 24,
@@ -644,7 +658,7 @@ const styles = StyleSheet.create({
   },
   rideWave: {
     fontSize: 20,
-    fontWeight: '800',
+    fontWeight: '700',
     color: Colors.primary,
     textAlign: 'center',
     marginBottom: 20,
@@ -687,9 +701,10 @@ const styles = StyleSheet.create({
     color: Colors.primaryDark,
   },
   messageIcon: {
-    fontSize: 48,
+    fontSize: 36,
     textAlign: 'center',
     marginBottom: 20,
+    color: Colors.primary,
   },
   messageText: {
     fontSize: 18,
@@ -703,13 +718,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 20,
   },
-  celebrateEmoji: {
-    fontSize: 64,
+  celebrateSymbol: {
+    fontSize: 48,
+    color: Colors.primary,
     marginBottom: 16,
+    fontWeight: '300',
   },
   celebrateTitle: {
-    fontSize: 28,
-    fontWeight: '700',
+    fontSize: 26,
+    fontWeight: '600',
     color: Colors.primary,
     marginBottom: 12,
     textAlign: 'center',
