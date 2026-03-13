@@ -9,12 +9,14 @@ import {
   SafeAreaView, ScrollView, FlatList, TextInput, Switch, Modal,
   KeyboardAvoidingView, Platform, StatusBar,
 } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Haptics from 'expo-haptics';
-import { LineChart, BarChart } from 'react-native-chart-kit';
+// In-memory storage (replaces AsyncStorage for Snack compatibility)
+const _store = {};
+const AsyncStorage = {
+  getItem: async (k) => _store[k] || null,
+  setItem: async (k, v) => { _store[k] = v; },
+};
+// Haptics stub
+const Haptics = { impactAsync: async () => {}, ImpactFeedbackStyle: { Light: 'light' } };
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -721,7 +723,7 @@ const breathStyles = StyleSheet.create({
 // --- HomeScreen (calming, only register button) ---
 const BUTTON_SIZE = SCREEN_WIDTH * 0.52;
 
-function HomeScreen({ navigation }) {
+function HomeScreen({ onOpenLog }) {
   const { refreshLogs, refreshStreak } = useApp();
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const glowAnim = useRef(new Animated.Value(0.3)).current;
@@ -760,7 +762,7 @@ function HomeScreen({ navigation }) {
     <SafeAreaView style={homeStyles.container}>
       <View style={homeStyles.centerContent}>
         <Animated.Text style={[homeStyles.brandName, { opacity: glowAnim }]}>brisa</Animated.Text>
-        <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('LogFlow')}>
+        <TouchableOpacity activeOpacity={0.8} onPress={onOpenLog}>
           <Animated.View style={[homeStyles.outerGlow, { opacity: glowAnim, transform: [{ scale: pulseAnim }, { translateY: floatAnim }] }]} />
           <Animated.View style={[homeStyles.mainButton, { transform: [{ scale: pulseAnim }, { translateY: floatAnim }] }]}>
             <View style={homeStyles.mainButtonInner}>
@@ -788,14 +790,28 @@ const homeStyles = StyleSheet.create({
 });
 
 
+// --- Simple Bar Chart (replaces react-native-chart-kit) ---
+function SimpleBarChart({ labels, data, height = 150 }) {
+  const max = Math.max(...data, 1);
+  return (
+    <View style={{ backgroundColor: Colors.card, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: Colors.border }}>
+      <View style={{ flexDirection: 'row', alignItems: 'flex-end', height, gap: 4 }}>
+        {data.map((val, i) => (
+          <View key={i} style={{ flex: 1, alignItems: 'center', justifyContent: 'flex-end', height: '100%' }}>
+            <View style={{ width: '70%', height: `${(val / max) * 100}%`, backgroundColor: Colors.primary, borderRadius: 4, minHeight: val > 0 ? 4 : 0 }} />
+          </View>
+        ))}
+      </View>
+      <View style={{ flexDirection: 'row', marginTop: 8 }}>
+        {labels.map((l, i) => (
+          <Text key={i} style={{ flex: 1, textAlign: 'center', fontSize: 10, color: Colors.textMuted }}>{l}</Text>
+        ))}
+      </View>
+    </View>
+  );
+}
+
 // --- DataScreen ---
-const CHART_WIDTH = SCREEN_WIDTH - 48;
-const chartConfig = {
-  backgroundColor: Colors.card, backgroundGradientFrom: Colors.card, backgroundGradientTo: Colors.card,
-  color: (opacity = 1) => `rgba(212, 132, 90, ${opacity})`, labelColor: () => Colors.textLight,
-  propsForDots: { r: '4', strokeWidth: '2', stroke: Colors.primary }, decimalPlaces: 0,
-  barPercentage: 0.6, style: { borderRadius: 16 },
-};
 
 function DataScreen() {
   const { t, logs } = useApp();
@@ -861,12 +877,12 @@ function DataScreen() {
         {analytics.feelData.length > 1 && (
           <View style={dataStyles.section}>
             <Text style={dataStyles.sectionTitle}>{t('howDoYouFeel')} — tendencia</Text>
-            <LineChart data={{ labels: analytics.recentLogs.map((_, i) => (i % 3 === 0 ? `${i + 1}` : '')), datasets: [{ data: analytics.feelData }] }} width={CHART_WIDTH} height={180} chartConfig={chartConfig} bezier style={dataStyles.chart} withInnerLines={false} />
+            <SimpleBarChart labels={analytics.recentLogs.map((_, i) => (i % 3 === 0 ? `${i + 1}` : ''))} data={analytics.feelData} />
           </View>
         )}
         <View style={dataStyles.section}>
           <Text style={dataStyles.sectionTitle}>{t('dataByHour')}</Text>
-          <BarChart data={{ labels: hourLabels, datasets: [{ data: hourData }] }} width={CHART_WIDTH} height={180} chartConfig={chartConfig} style={dataStyles.chart} withInnerLines={false} showValuesOnTopOfBars />
+          <SimpleBarChart labels={hourLabels} data={hourData} />
         </View>
         {renderTopItems(analytics.bodyParts, t('dataByBodyPart'))}
         {renderTopItems(analytics.locations, t('dataByLocation'))}
@@ -1186,7 +1202,7 @@ function TimerStep({ duration, label, onComplete }) {
   );
 }
 
-function LogFlowScreen({ navigation }) {
+function LogFlowScreen({ onClose }) {
   const { t, refreshLogs, refreshStreak, getSmartOptions, saveSmartOption } = useApp();
   const [path, setPath] = useState(null);
   const [stepIndex, setStepIndex] = useState(0);
@@ -1221,14 +1237,14 @@ function LogFlowScreen({ navigation }) {
   const goBack = () => { if (stepIndex > 0) animateTransition(() => setStepIndex(stepIndex - 1)); else setPath(null); };
   const skipToStep = (targetKey) => { const idx = getSteps().indexOf(targetKey); if (idx >= 0) animateTransition(() => setStepIndex(idx)); };
   const updateData = (key, value) => setData((prev) => ({ ...prev, [key]: value }));
-  const closeFlow = () => navigation.goBack();
+  const closeFlow = () => onClose();
 
   const finishLog = async () => {
     const log = { ...data, path, completedAt: new Date().toISOString() };
     await addLog(log); await updateStreak('logged');
     if (data.location) await saveSmartOption('location', data.location);
     if (data.activity) await saveSmartOption('activity', data.activity);
-    await refreshLogs(); await refreshStreak(); navigation.goBack();
+    await refreshLogs(); await refreshStreak(); onClose();
   };
 
   if (!path) {
@@ -1408,68 +1424,60 @@ const logStyles = StyleSheet.create({
 
 
 // ============================================================
-// NAVIGATION (App Root)
+// NAVIGATION (Simple state-based, no dependencies)
 // ============================================================
-const Tab = createBottomTabNavigator();
-const Stack = createNativeStackNavigator();
+const TABS = [
+  { key: 'Home', icon: '\u2302', label: 'Inicio' },
+  { key: 'Data', icon: '\u25CB', label: 'Datos' },
+  { key: 'Journal', icon: '\u2661', label: 'Diario' },
+  { key: 'Chat', icon: '\u2740', label: 'Chat' },
+  { key: 'Profile', icon: '\u2726', label: 'Perfil' },
+];
 
-const TAB_ICONS = {
-  Home: { icon: '\u2302', label: 'Inicio' },
-  Data: { icon: '\u25CB', label: 'Datos' },
-  Journal: { icon: '\u2661', label: 'Diario' },
-  Chat: { icon: '\u2740', label: 'Chat' },
-  Profile: { icon: '\u2726', label: 'Perfil' },
-};
+const SCREENS = { Home: HomeScreen, Data: DataScreen, Journal: JournalScreen, Chat: ChatScreen, Profile: ProfileScreen };
 
-function TabIcon({ name, focused }) {
+export default function App() {
+  const [activeTab, setActiveTab] = useState('Home');
+  const [showLogFlow, setShowLogFlow] = useState(false);
+  const ActiveScreen = SCREENS[activeTab];
   return (
-    <View style={[tabStyles.tabIcon, focused && tabStyles.tabIconActive]}>
-      <Text style={[tabStyles.tabSymbol, focused ? tabStyles.tabSymbolActive : tabStyles.tabSymbolInactive]}>
-        {TAB_ICONS[name].icon}
-      </Text>
-    </View>
-  );
-}
-
-function MainTabs() {
-  return (
-    <Tab.Navigator
-      screenOptions={({ route }) => ({
-        headerShown: false,
-        tabBarIcon: ({ focused }) => <TabIcon name={route.name} focused={focused} />,
-        tabBarActiveTintColor: Colors.primary,
-        tabBarInactiveTintColor: Colors.textMuted,
-        tabBarStyle: { backgroundColor: Colors.card, borderTopColor: Colors.divider, borderTopWidth: 1, paddingTop: 8, paddingBottom: 8, height: 76 },
-        tabBarLabelStyle: { fontSize: 10, fontWeight: '400', marginTop: 2, letterSpacing: 0.5 },
-      })}
-    >
-      <Tab.Screen name="Home" component={HomeScreen} options={{ tabBarLabel: 'Inicio' }} />
-      <Tab.Screen name="Data" component={DataScreen} options={{ tabBarLabel: 'Datos' }} />
-      <Tab.Screen name="Journal" component={JournalScreen} options={{ tabBarLabel: 'Diario' }} />
-      <Tab.Screen name="Chat" component={ChatScreen} options={{ tabBarLabel: 'Chat' }} />
-      <Tab.Screen name="Profile" component={ProfileScreen} options={{ tabBarLabel: 'Perfil' }} />
-    </Tab.Navigator>
+    <AppProvider>
+      <SafeAreaView style={{ flex: 1, backgroundColor: Colors.background }}>
+        <StatusBar barStyle="dark-content" />
+        <View style={{ flex: 1 }}>
+          <ActiveScreen onOpenLog={() => setShowLogFlow(true)} />
+        </View>
+        {/* Tab Bar */}
+        <View style={tabStyles.bar}>
+          {TABS.map((tab) => {
+            const focused = activeTab === tab.key;
+            return (
+              <TouchableOpacity key={tab.key} style={tabStyles.tab} onPress={() => setActiveTab(tab.key)}>
+                <View style={[tabStyles.tabIcon, focused && tabStyles.tabIconActive]}>
+                  <Text style={[tabStyles.tabSymbol, focused ? tabStyles.tabSymbolActive : tabStyles.tabSymbolInactive]}>{tab.icon}</Text>
+                </View>
+                <Text style={[tabStyles.tabLabel, focused && tabStyles.tabLabelActive]}>{tab.label}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+        {/* LogFlow Modal */}
+        <Modal visible={showLogFlow} animationType="slide" onRequestClose={() => setShowLogFlow(false)}>
+          <LogFlowScreen onClose={() => setShowLogFlow(false)} />
+        </Modal>
+      </SafeAreaView>
+    </AppProvider>
   );
 }
 
 const tabStyles = StyleSheet.create({
+  bar: { flexDirection: 'row', backgroundColor: Colors.card, borderTopColor: Colors.divider, borderTopWidth: 1, paddingTop: 8, paddingBottom: 8, height: 76 },
+  tab: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   tabIcon: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   tabIconActive: { backgroundColor: Colors.primaryLight },
   tabSymbol: { fontSize: 20 },
   tabSymbolActive: { color: Colors.primary },
   tabSymbolInactive: { color: Colors.textMuted },
+  tabLabel: { fontSize: 10, fontWeight: '400', marginTop: 2, letterSpacing: 0.5, color: Colors.textMuted },
+  tabLabelActive: { color: Colors.primary },
 });
-
-export default function App() {
-  return (
-    <AppProvider>
-      <NavigationContainer>
-        <StatusBar barStyle="dark-content" />
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="Main" component={MainTabs} />
-          <Stack.Screen name="LogFlow" component={LogFlowScreen} options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
-        </Stack.Navigator>
-      </NavigationContainer>
-    </AppProvider>
-  );
-}
