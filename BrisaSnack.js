@@ -7,9 +7,8 @@ import React, { useState, useEffect, useRef, useCallback, useMemo, createContext
 import {
   View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions,
   SafeAreaView, ScrollView, FlatList, TextInput, Switch, Modal,
-  KeyboardAvoidingView, Platform,
+  KeyboardAvoidingView, Platform, StatusBar,
 } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -1465,7 +1464,7 @@ export default function App() {
   return (
     <AppProvider>
       <NavigationContainer>
-        <StatusBar style="dark" />
+        <StatusBar barStyle="dark-content" />
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           <Stack.Screen name="Main" component={MainTabs} />
           <Stack.Screen name="LogFlow" component={LogFlowScreen} options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
