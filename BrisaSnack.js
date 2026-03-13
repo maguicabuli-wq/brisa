@@ -487,11 +487,10 @@ function useApp() {
 // ============================================================
 
 // --- OptionButton (pastel colored cards) ---
-const OPT_COLORS = [Colors.sage, Colors.lavender, Colors.blush, Colors.honey, Colors.sky, Colors.mint, Colors.peach];
-let _optColorIdx = 0;
+const OPT_COLORS = ['#C5D4B8', '#C5C0D8', '#E8C5C5', '#E8D8A8', '#B8CCD8', '#B8D8CC', '#E8CCAE'];
 
-function OptionButton({ label, onPress, selected, icon, small, secondary, colorIndex }) {
-  const bgColor = secondary ? 'transparent' : OPT_COLORS[(colorIndex ?? _optColorIdx++) % OPT_COLORS.length];
+function OptionButton({ label, onPress, selected, icon, small, secondary, colorIndex = 0 }) {
+  const bgColor = secondary ? 'transparent' : OPT_COLORS[colorIndex % OPT_COLORS.length];
   return (
     <TouchableOpacity
       style={[
@@ -532,48 +531,64 @@ const optBtnStyles = StyleSheet.create({
   labelSecondary: { color: Colors.textLight },
 });
 
-// --- ScaleSlider (Emoji face circles, organic & friendly) ---
+// --- ScaleSlider (Big center face with surrounding smaller ones) ---
 const MOOD_FACES = [
-  { face: '>_<', color: '#E0A0B0', bg: '#F5D5DD' },   // 0 - distressed
-  { face: 'T_T', color: '#D4A0B8', bg: '#F0D0E0' },   // 1
-  { face: '._.',  color: '#C5A0C5', bg: '#E8D0E8' },   // 2
-  { face: '-_-', color: '#B8A8D0', bg: '#DDD0E8' },   // 3
-  { face: '._o', color: '#B0B8D0', bg: '#D0D8E8' },   // 4
-  { face: '-_-', color: '#A8C0C8', bg: '#D0E0E5' },   // 5 - neutral
-  { face: 'o_o', color: '#A0C8B8', bg: '#C8E5D8' },   // 6
-  { face: '^_^', color: '#A8C8A0', bg: '#D0E5C8' },   // 7
-  { face: '^.^', color: '#B8D0A0', bg: '#D8E8C0' },   // 8
-  { face: '>u<', color: '#C8D8A0', bg: '#E0E8C0' },   // 9
-  { face: '^w^', color: '#A8B5A0', bg: '#D4DDD0' },   // 10 - great
+  { face: '>.<', label: 'Muy mal',   color: '#C87070', bg: '#F0C8C8' },
+  { face: 'T.T', label: 'Mal',       color: '#C08088', bg: '#ECC8D0' },
+  { face: '...',  label: 'Bajo',      color: '#B088A0', bg: '#E0C8D8' },
+  { face: '-.-', label: 'Decaida',   color: '#A090B0', bg: '#D8C8E0' },
+  { face: '._.',  label: 'Meh',       color: '#90A0B8', bg: '#D0D8E8' },
+  { face: '-_-', label: 'Neutral',   color: '#88A8B0', bg: '#C8E0E0' },
+  { face: 'o.o', label: 'Ok',        color: '#80B0A0', bg: '#C8E0D0' },
+  { face: '^_^', label: 'Bien',      color: '#80B888', bg: '#C8E8D0' },
+  { face: '^.^', label: 'Muy bien',  color: '#90C080', bg: '#D0E8C0' },
+  { face: '>v<', label: 'Genial',    color: '#A0C870', bg: '#D8F0C0' },
+  { face: '^w^', label: 'Increible', color: '#88B878', bg: '#C8E0C0' },
 ];
 
 function ScaleSlider({ label, value, onChange, leftLabel, rightLabel, min = 0, max = 10 }) {
   const current = MOOD_FACES[value] || MOOD_FACES[5];
+  // Show 3 faces: prev, current (big), next
+  const prev = value > 0 ? MOOD_FACES[value - 1] : null;
+  const next = value < 10 ? MOOD_FACES[value + 1] : null;
+
   return (
     <View style={scaleStyles.container}>
       {label && <Text style={scaleStyles.label}>{label}</Text>}
-      {/* Big selected face */}
-      <View style={[scaleStyles.bigCircle, { backgroundColor: current.bg }]}>
-        <Text style={[scaleStyles.bigFace, { color: current.color }]}>{current.face}</Text>
+
+      {/* Three-face display */}
+      <View style={scaleStyles.faceRow}>
+        {prev ? (
+          <TouchableOpacity onPress={() => onChange(value - 1)} style={[scaleStyles.sideCircle, { backgroundColor: prev.bg }]}>
+            <Text style={[scaleStyles.sideFace, { color: prev.color }]}>{prev.face}</Text>
+          </TouchableOpacity>
+        ) : <View style={scaleStyles.sideCircle} />}
+
+        <View style={[scaleStyles.bigCircle, { backgroundColor: current.bg }]}>
+          <Text style={[scaleStyles.bigFace, { color: current.color }]}>{current.face}</Text>
+        </View>
+
+        {next ? (
+          <TouchableOpacity onPress={() => onChange(value + 1)} style={[scaleStyles.sideCircle, { backgroundColor: next.bg }]}>
+            <Text style={[scaleStyles.sideFace, { color: next.color }]}>{next.face}</Text>
+          </TouchableOpacity>
+        ) : <View style={scaleStyles.sideCircle} />}
       </View>
-      <Text style={scaleStyles.valueLabel}>{value}</Text>
-      {/* Face row */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={scaleStyles.row}>
-        {MOOD_FACES.map((mood, num) => {
-          const isSelected = num === value;
-          return (
-            <TouchableOpacity
-              key={num}
-              style={[scaleStyles.dot, { backgroundColor: mood.bg }, isSelected && scaleStyles.dotActive]}
-              onPress={() => onChange(num)}
-            >
-              <Text style={[scaleStyles.dotFace, { color: mood.color }, isSelected && { fontSize: 16 }]}>{mood.face}</Text>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
+
+      <Text style={scaleStyles.moodLabel}>{current.label}</Text>
+
+      {/* Dot track */}
+      <View style={scaleStyles.dotTrack}>
+        {MOOD_FACES.map((_, num) => (
+          <TouchableOpacity key={num} onPress={() => onChange(num)} style={scaleStyles.dotHit}>
+            <View style={[scaleStyles.dot, num === value && scaleStyles.dotActive, num <= value && { backgroundColor: current.color }]} />
+          </TouchableOpacity>
+        ))}
+      </View>
+
       <View style={scaleStyles.labelsRow}>
         <Text style={scaleStyles.edgeLabel}>{leftLabel}</Text>
+        <Text style={scaleStyles.valueNum}>{value}</Text>
         <Text style={scaleStyles.edgeLabel}>{rightLabel}</Text>
       </View>
     </View>
@@ -582,16 +597,20 @@ function ScaleSlider({ label, value, onChange, leftLabel, rightLabel, min = 0, m
 
 const scaleStyles = StyleSheet.create({
   container: { marginVertical: 20, alignItems: 'center' },
-  label: { fontSize: 20, fontWeight: '700', color: Colors.text, marginBottom: 24, textAlign: 'center', lineHeight: 28 },
-  bigCircle: { width: 100, height: 100, borderRadius: 50, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
-  bigFace: { fontSize: 28, fontWeight: '700' },
-  valueLabel: { fontSize: 14, fontWeight: '600', color: Colors.textLight, marginBottom: 20 },
-  row: { flexDirection: 'row', gap: 10, paddingHorizontal: 16, paddingVertical: 4 },
-  dot: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
-  dotActive: { transform: [{ scale: 1.2 }], shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.15, shadowRadius: 8, elevation: 4 },
-  dotFace: { fontSize: 12, fontWeight: '700' },
-  labelsRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 16, width: '100%', paddingHorizontal: 16 },
+  label: { fontSize: 20, fontWeight: '700', color: Colors.text, marginBottom: 28, textAlign: 'center', lineHeight: 28 },
+  faceRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 16, marginBottom: 12 },
+  bigCircle: { width: 96, height: 96, borderRadius: 48, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 4 },
+  bigFace: { fontSize: 30, fontWeight: '700' },
+  sideCircle: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', opacity: 0.7 },
+  sideFace: { fontSize: 16, fontWeight: '700' },
+  moodLabel: { fontSize: 16, fontWeight: '600', color: Colors.text, marginBottom: 24, marginTop: 4 },
+  dotTrack: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 16 },
+  dotHit: { padding: 4 },
+  dot: { width: 10, height: 10, borderRadius: 5, backgroundColor: Colors.border },
+  dotActive: { width: 14, height: 14, borderRadius: 7 },
+  labelsRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: '100%', paddingHorizontal: 16 },
   edgeLabel: { fontSize: 13, color: Colors.textMuted, fontWeight: '400' },
+  valueNum: { fontSize: 18, fontWeight: '700', color: Colors.text },
 });
 
 // --- VoiceInput ---
@@ -794,45 +813,51 @@ function HomeScreen({ onOpenLog }) {
   }, []);
 
   const greeting = new Date().getHours() < 12 ? 'Buenos dias' : new Date().getHours() < 18 ? 'Buenas tardes' : 'Buenas noches';
+  const { streak, logs } = useApp();
 
   return (
     <SafeAreaView style={homeStyles.container}>
       <ScrollView contentContainerStyle={homeStyles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <Text style={homeStyles.greeting}>{greeting}</Text>
-        <Text style={homeStyles.bigQuestion}>Como te{'\n'}sientes hoy?</Text>
+        {/* Greeting chip */}
+        <View style={homeStyles.greetingChip}>
+          <Text style={homeStyles.greetingText}>{greeting}</Text>
+        </View>
 
-        {/* Decorative blobs */}
-        <View style={homeStyles.blobRow}>
-          <Animated.View style={[homeStyles.blob, homeStyles.blobSage, { transform: [{ translateY: floatAnim }] }]} />
-          <Animated.View style={[homeStyles.blob, homeStyles.blobLavender, { transform: [{ translateY: floatAnim }, { scale: pulseAnim }] }]}>
-            <Text style={homeStyles.blobFace}>^.^</Text>
+        {/* Big question */}
+        <Text style={homeStyles.bigQuestion}>Como te sientes{'\n'}realmente hoy?</Text>
+        <Text style={homeStyles.subtitle}>Toma un momento para conectar{'\n'}contigo misma.</Text>
+
+        {/* Three mood faces */}
+        <View style={homeStyles.faceRow}>
+          <Animated.View style={[homeStyles.faceSmall, { backgroundColor: '#F0C8C8' }, { transform: [{ translateY: floatAnim }] }]}>
+            <Text style={[homeStyles.faceSmallText, { color: '#C07070' }]}>-.-</Text>
           </Animated.View>
-          <Animated.View style={[homeStyles.blob, homeStyles.blobBlush, { transform: [{ translateY: floatAnim }] }]} />
+          <Animated.View style={[homeStyles.faceBig, { backgroundColor: '#E8D8A8' }, { transform: [{ scale: pulseAnim }] }]}>
+            <Text style={[homeStyles.faceBigText, { color: '#B0A060' }]}>^.^</Text>
+          </Animated.View>
+          <Animated.View style={[homeStyles.faceSmall, { backgroundColor: '#C5C0D8' }, { transform: [{ translateY: floatAnim }] }]}>
+            <Text style={[homeStyles.faceSmallText, { color: '#8880A8' }]}>._.</Text>
+          </Animated.View>
         </View>
 
         {/* Main CTA */}
         <TouchableOpacity activeOpacity={0.85} onPress={onOpenLog} style={homeStyles.ctaCard}>
           <View style={homeStyles.ctaInner}>
             <Text style={homeStyles.ctaTitle}>Registrar</Text>
-            <Text style={homeStyles.ctaSub}>Toca cuando quieras</Text>
+            <Text style={homeStyles.ctaSub}>Toca para empezar</Text>
           </View>
-          <View style={homeStyles.ctaArrow}><Text style={homeStyles.ctaArrowText}>{'>'}</Text></View>
+          <View style={homeStyles.ctaArrow}><Text style={homeStyles.ctaArrowText}>{'\u2192'}</Text></View>
         </TouchableOpacity>
 
-        {/* Info cards */}
-        <View style={homeStyles.cardsRow}>
-          <View style={[homeStyles.infoCard, { backgroundColor: Colors.sage }]}>
-            <Text style={homeStyles.infoCardEmoji}>~</Text>
-            <Text style={homeStyles.infoCardLabel}>Respira</Text>
+        {/* Stats row */}
+        <View style={homeStyles.statsRow}>
+          <View style={[homeStyles.statCard, { backgroundColor: Colors.sage }]}>
+            <Text style={homeStyles.statNum}>{streak.currentStreak}</Text>
+            <Text style={homeStyles.statLabel}>dias</Text>
           </View>
-          <View style={[homeStyles.infoCard, { backgroundColor: Colors.lavender }]}>
-            <Text style={homeStyles.infoCardEmoji}>{'\u2661'}</Text>
-            <Text style={homeStyles.infoCardLabel}>Diario</Text>
-          </View>
-          <View style={[homeStyles.infoCard, { backgroundColor: Colors.honey }]}>
-            <Text style={homeStyles.infoCardEmoji}>{'...'}</Text>
-            <Text style={homeStyles.infoCardLabel}>Chat</Text>
+          <View style={[homeStyles.statCard, { backgroundColor: Colors.lavender }]}>
+            <Text style={homeStyles.statNum}>{logs.length}</Text>
+            <Text style={homeStyles.statLabel}>registros</Text>
           </View>
         </View>
       </ScrollView>
@@ -842,25 +867,26 @@ function HomeScreen({ onOpenLog }) {
 
 const homeStyles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-  scrollContent: { paddingHorizontal: 24, paddingTop: 40, paddingBottom: 24 },
-  greeting: { fontSize: 14, fontWeight: '400', color: Colors.textMuted, letterSpacing: 1, marginBottom: 8 },
-  bigQuestion: { fontSize: 34, fontWeight: '800', color: Colors.text, lineHeight: 42, marginBottom: 32 },
-  blobRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 16, marginBottom: 36, height: 80 },
-  blob: { width: 56, height: 56, borderRadius: 28 },
-  blobSage: { backgroundColor: Colors.sage, width: 40, height: 40, borderRadius: 20, marginTop: 20 },
-  blobLavender: { backgroundColor: Colors.lavender, width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center' },
-  blobBlush: { backgroundColor: Colors.blush, width: 48, height: 48, borderRadius: 24, marginTop: -10 },
-  blobFace: { fontSize: 22, fontWeight: '700', color: '#8B80A8' },
-  ctaCard: { backgroundColor: Colors.rose, borderRadius: 28, padding: 28, flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
+  scrollContent: { paddingHorizontal: 24, paddingTop: 48, paddingBottom: 24, alignItems: 'center' },
+  greetingChip: { backgroundColor: Colors.card, paddingVertical: 8, paddingHorizontal: 20, borderRadius: 20, marginBottom: 28 },
+  greetingText: { fontSize: 13, fontWeight: '500', color: Colors.textLight },
+  bigQuestion: { fontSize: 30, fontWeight: '800', color: Colors.text, lineHeight: 40, marginBottom: 10, textAlign: 'center' },
+  subtitle: { fontSize: 14, fontWeight: '400', color: Colors.textMuted, textAlign: 'center', lineHeight: 22, marginBottom: 32 },
+  faceRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 16, marginBottom: 36 },
+  faceBig: { width: 88, height: 88, borderRadius: 44, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 4 },
+  faceBigText: { fontSize: 28, fontWeight: '700' },
+  faceSmall: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center' },
+  faceSmallText: { fontSize: 16, fontWeight: '700' },
+  ctaCard: { backgroundColor: Colors.rose, borderRadius: 28, padding: 24, flexDirection: 'row', alignItems: 'center', marginBottom: 16, width: '100%' },
   ctaInner: { flex: 1 },
-  ctaTitle: { fontSize: 22, fontWeight: '700', color: '#FFFFFF', marginBottom: 4 },
-  ctaSub: { fontSize: 14, fontWeight: '400', color: 'rgba(255,255,255,0.8)' },
+  ctaTitle: { fontSize: 20, fontWeight: '700', color: '#FFFFFF', marginBottom: 4 },
+  ctaSub: { fontSize: 13, fontWeight: '400', color: 'rgba(255,255,255,0.8)' },
   ctaArrow: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.3)', alignItems: 'center', justifyContent: 'center' },
-  ctaArrowText: { fontSize: 20, fontWeight: '700', color: '#FFFFFF' },
-  cardsRow: { flexDirection: 'row', gap: 12 },
-  infoCard: { flex: 1, borderRadius: 24, padding: 20, alignItems: 'center', minHeight: 100, justifyContent: 'center' },
-  infoCardEmoji: { fontSize: 24, marginBottom: 8 },
-  infoCardLabel: { fontSize: 13, fontWeight: '600', color: Colors.text },
+  ctaArrowText: { fontSize: 20, color: '#FFFFFF' },
+  statsRow: { flexDirection: 'row', gap: 12, width: '100%' },
+  statCard: { flex: 1, borderRadius: 24, padding: 20, alignItems: 'center' },
+  statNum: { fontSize: 28, fontWeight: '800', color: Colors.text },
+  statLabel: { fontSize: 12, fontWeight: '500', color: Colors.textLight, marginTop: 4 },
 });
 
 
@@ -1337,10 +1363,10 @@ function LogFlowScreen({ onClose }) {
         <View style={logStyles.content}>
           <Text style={logStyles.bigTitle}>{t('logTitle')}</Text>
           <View style={logStyles.optionsList}>
-            <OptionButton label={t('logOptionA')} onPress={() => { setPath('A'); setStepIndex(0); }} />
-            <OptionButton label={t('logOptionB')} onPress={() => { setPath('B'); setStepIndex(0); }} />
-            <OptionButton label={t('logOptionC')} onPress={() => { setPath('C'); setStepIndex(0); }} />
-            <OptionButton label={t('logOptionD')} onPress={() => { setPath('D'); setStepIndex(0); }} />
+            <OptionButton label={t('logOptionA')} colorIndex={0} onPress={() => { setPath('A'); setStepIndex(0); }} />
+            <OptionButton label={t('logOptionB')} colorIndex={1} onPress={() => { setPath('B'); setStepIndex(0); }} />
+            <OptionButton label={t('logOptionC')} colorIndex={2} onPress={() => { setPath('C'); setStepIndex(0); }} />
+            <OptionButton label={t('logOptionD')} colorIndex={3} onPress={() => { setPath('D'); setStepIndex(0); }} />
           </View>
         </View>
       </SafeAreaView>
@@ -1359,7 +1385,7 @@ function LogFlowScreen({ onClose }) {
           <View style={logStyles.stepContent}>
             <Text style={logStyles.stepTitle}>{t(currentStep.labelKey)}</Text>
             <View style={currentStep.small ? logStyles.optionsGrid : logStyles.optionsList}>
-              {currentStep.options.map((opt) => (<OptionButton key={opt} label={t(opt)} selected={data[currentStep.key] === opt} onPress={() => updateData(currentStep.key, opt)} small={currentStep.small} />))}
+              {currentStep.options.map((opt, idx) => (<OptionButton key={opt} label={t(opt)} colorIndex={idx} selected={data[currentStep.key] === opt} onPress={() => updateData(currentStep.key, opt)} small={currentStep.small} />))}
             </View>
             {currentStep.showOtherInput && data[currentStep.key] === 'other' && (<VoiceInput value={data[`${currentStep.key}Other`] || ''} onChangeText={(text) => updateData(`${currentStep.key}Other`, text)} placeholder={t('specify')} multiline={false} />)}
           </View>
@@ -1506,11 +1532,11 @@ const logStyles = StyleSheet.create({
 // NAVIGATION (Simple state-based, no dependencies)
 // ============================================================
 const TABS = [
-  { key: 'Data', icon: '\u2022\u2022\u2022', label: 'Datos' },
-  { key: 'Journal', icon: '\u2661', label: 'Diario' },
-  { key: 'Home', icon: '~', label: 'Inicio', isMain: true },
-  { key: 'Chat', icon: '\u2026', label: 'Chat' },
-  { key: 'Profile', icon: '\u25E6', label: 'Perfil' },
+  { key: 'Data', icon: '\u25CF', label: 'Datos' },
+  { key: 'Journal', icon: '\u270E', label: 'Diario' },
+  { key: 'Home', icon: '^.^', label: 'Inicio', isMain: true },
+  { key: 'Chat', icon: '\u2767', label: 'Chat' },
+  { key: 'Profile', icon: '\u2606', label: 'Perfil' },
 ];
 
 const SCREENS = { Home: HomeScreen, Data: DataScreen, Journal: JournalScreen, Chat: ChatScreen, Profile: ProfileScreen };
