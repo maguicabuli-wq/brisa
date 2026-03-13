@@ -24,32 +24,41 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 // COLORS
 // ============================================================
 const Colors = {
-  background: '#FFF8F0',
-  surface: '#FFF2E8',
+  background: '#F5F0EA',    // warm cream/beige
+  surface: '#EDE8E0',       // slightly darker cream
   card: '#FFFFFF',
-  primary: '#D4845A',
-  primaryLight: '#F0D5C4',
-  primaryDark: '#B86B42',
-  secondary: '#8B9E8B',
-  secondaryLight: '#C5D4C5',
-  accent: '#E8B298',
+  primary: '#2D2D2D',       // near-black for strong contrast
+  primaryLight: '#E8E3DB',  // warm light
+  primaryDark: '#1A1A1A',
+  secondary: '#A8B5A0',     // sage green
+  secondaryLight: '#D4DDD0', // light sage
+  accent: '#E8B298',        // warm peach
   accentSoft: '#FAE6D8',
-  text: '#3D2C2C',
-  textLight: '#7A6B6B',
-  textMuted: '#B8A9A9',
+  // Pastel card colors (for colored cards like the references)
+  sage: '#C5D4B8',          // muted sage
+  lavender: '#C5C0D8',      // soft lavender
+  blush: '#E8C5C5',         // soft pink
+  honey: '#E8D8A8',         // warm yellow
+  sky: '#B8CCD8',           // soft blue
+  mint: '#B8D8CC',          // soft mint
+  peach: '#E8CCAE',         // warm peach
+  rose: '#E0A0B0',          // muted rose/pink (for accents)
+  text: '#2D2D2D',
+  textLight: '#6B6B6B',
+  textMuted: '#A0A0A0',
   textOnPrimary: '#FFFFFF',
-  border: '#F0E4DA',
-  divider: '#F5EDE5',
-  shadow: 'rgba(61, 44, 44, 0.08)',
-  overlay: 'rgba(61, 44, 44, 0.4)',
-  success: '#7DA67D',
-  warning: '#E8B86D',
-  error: '#D47E7E',
-  info: '#7E9EB8',
-  breatheGlow: '#F0D5C4',
-  breatheCenter: '#D4845A',
-  streak: '#E8B86D',
-  badge: '#D4845A',
+  border: '#E8E3DB',
+  divider: '#EDE8E0',
+  shadow: 'rgba(0, 0, 0, 0.06)',
+  overlay: 'rgba(0, 0, 0, 0.35)',
+  success: '#A8B5A0',
+  warning: '#E8D8A8',
+  error: '#E0A0B0',
+  info: '#B8CCD8',
+  breatheGlow: '#D4DDD0',
+  breatheCenter: '#A8B5A0',
+  streak: '#E8D8A8',
+  badge: '#E0A0B0',
 };
 
 
@@ -477,18 +486,23 @@ function useApp() {
 // COMPONENTS
 // ============================================================
 
-// --- OptionButton ---
-function OptionButton({ label, onPress, selected, icon, small, secondary }) {
+// --- OptionButton (pastel colored cards) ---
+const OPT_COLORS = [Colors.sage, Colors.lavender, Colors.blush, Colors.honey, Colors.sky, Colors.mint, Colors.peach];
+let _optColorIdx = 0;
+
+function OptionButton({ label, onPress, selected, icon, small, secondary, colorIndex }) {
+  const bgColor = secondary ? 'transparent' : OPT_COLORS[(colorIndex ?? _optColorIdx++) % OPT_COLORS.length];
   return (
     <TouchableOpacity
       style={[
         optBtnStyles.button,
+        { backgroundColor: bgColor },
         selected && optBtnStyles.selected,
         small && optBtnStyles.small,
         secondary && optBtnStyles.secondary,
       ]}
       onPress={onPress}
-      activeOpacity={0.7}
+      activeOpacity={0.8}
     >
       {icon ? <Text style={optBtnStyles.icon}>{icon}</Text> : null}
       <Text style={[
@@ -505,54 +519,59 @@ function OptionButton({ label, onPress, selected, icon, small, secondary }) {
 
 const optBtnStyles = StyleSheet.create({
   button: {
-    backgroundColor: Colors.card, borderRadius: 24, paddingVertical: 20, paddingHorizontal: 24,
-    marginVertical: 6, borderWidth: 1.5, borderColor: Colors.border, flexDirection: 'row', alignItems: 'center',
-    shadowColor: Colors.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 1, shadowRadius: 8, elevation: 2,
+    borderRadius: 24, paddingVertical: 22, paddingHorizontal: 24,
+    marginVertical: 6, borderWidth: 0, flexDirection: 'row', alignItems: 'center',
   },
-  selected: { backgroundColor: Colors.primaryLight, borderColor: Colors.primary, shadowColor: Colors.primary, shadowOpacity: 0.15 },
+  selected: { borderWidth: 2.5, borderColor: Colors.text },
   small: { paddingVertical: 14, paddingHorizontal: 18, borderRadius: 20, marginVertical: 4 },
-  secondary: { backgroundColor: 'transparent', borderColor: Colors.border, borderStyle: 'dashed' },
+  secondary: { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: Colors.border, borderStyle: 'dashed' },
   icon: { fontSize: 20, marginRight: 12 },
-  label: { fontSize: 16, fontWeight: '500', color: Colors.text, flex: 1 },
-  labelSelected: { color: Colors.primaryDark, fontWeight: '600' },
+  label: { fontSize: 16, fontWeight: '600', color: Colors.text, flex: 1 },
+  labelSelected: { fontWeight: '700' },
   labelSmall: { fontSize: 14 },
-  labelSecondary: { color: Colors.textLight, fontStyle: 'italic' },
+  labelSecondary: { color: Colors.textLight },
 });
 
-// --- ScaleSlider (Headspace-style, big round bubbles) ---
-const SCALE_COLORS = [
-  '#7DA67D', '#8DB88D', '#A8C8A0', '#C5D9A0', '#E0E8A0',
-  '#F0E0A0', '#F0D090', '#E8B86D', '#D4845A', '#D47E7E', '#C06060',
+// --- ScaleSlider (Emoji face circles, organic & friendly) ---
+const MOOD_FACES = [
+  { face: '>_<', color: '#E0A0B0', bg: '#F5D5DD' },   // 0 - distressed
+  { face: 'T_T', color: '#D4A0B8', bg: '#F0D0E0' },   // 1
+  { face: '._.',  color: '#C5A0C5', bg: '#E8D0E8' },   // 2
+  { face: '-_-', color: '#B8A8D0', bg: '#DDD0E8' },   // 3
+  { face: '._o', color: '#B0B8D0', bg: '#D0D8E8' },   // 4
+  { face: '-_-', color: '#A8C0C8', bg: '#D0E0E5' },   // 5 - neutral
+  { face: 'o_o', color: '#A0C8B8', bg: '#C8E5D8' },   // 6
+  { face: '^_^', color: '#A8C8A0', bg: '#D0E5C8' },   // 7
+  { face: '^.^', color: '#B8D0A0', bg: '#D8E8C0' },   // 8
+  { face: '>u<', color: '#C8D8A0', bg: '#E0E8C0' },   // 9
+  { face: '^w^', color: '#A8B5A0', bg: '#D4DDD0' },   // 10 - great
 ];
 
 function ScaleSlider({ label, value, onChange, leftLabel, rightLabel, min = 0, max = 10 }) {
-  const numbers = Array.from({ length: max - min + 1 }, (_, i) => min + i);
+  const current = MOOD_FACES[value] || MOOD_FACES[5];
   return (
     <View style={scaleStyles.container}>
       {label && <Text style={scaleStyles.label}>{label}</Text>}
-      {/* Big selected value display */}
-      <View style={[scaleStyles.bigCircle, { backgroundColor: SCALE_COLORS[value] || Colors.primary }]}>
-        <Text style={scaleStyles.bigNumber}>{value}</Text>
+      {/* Big selected face */}
+      <View style={[scaleStyles.bigCircle, { backgroundColor: current.bg }]}>
+        <Text style={[scaleStyles.bigFace, { color: current.color }]}>{current.face}</Text>
       </View>
-      <View style={scaleStyles.row}>
-        {numbers.map((num) => {
+      <Text style={scaleStyles.valueLabel}>{value}</Text>
+      {/* Face row */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={scaleStyles.row}>
+        {MOOD_FACES.map((mood, num) => {
           const isSelected = num === value;
-          const isFilled = num <= value;
           return (
             <TouchableOpacity
               key={num}
-              style={[
-                scaleStyles.dot,
-                isFilled && { backgroundColor: SCALE_COLORS[num], borderColor: SCALE_COLORS[num] },
-                isSelected && scaleStyles.dotActive,
-              ]}
+              style={[scaleStyles.dot, { backgroundColor: mood.bg }, isSelected && scaleStyles.dotActive]}
               onPress={() => onChange(num)}
             >
-              <Text style={[scaleStyles.dotText, (isFilled || isSelected) && scaleStyles.dotTextFilled]}>{num}</Text>
+              <Text style={[scaleStyles.dotFace, { color: mood.color }, isSelected && { fontSize: 16 }]}>{mood.face}</Text>
             </TouchableOpacity>
           );
         })}
-      </View>
+      </ScrollView>
       <View style={scaleStyles.labelsRow}>
         <Text style={scaleStyles.edgeLabel}>{leftLabel}</Text>
         <Text style={scaleStyles.edgeLabel}>{rightLabel}</Text>
@@ -563,18 +582,15 @@ function ScaleSlider({ label, value, onChange, leftLabel, rightLabel, min = 0, m
 
 const scaleStyles = StyleSheet.create({
   container: { marginVertical: 20, alignItems: 'center' },
-  label: { fontSize: 18, fontWeight: '600', color: Colors.text, marginBottom: 20, textAlign: 'center', lineHeight: 26 },
-  bigCircle: { width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center', marginBottom: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 12, elevation: 6 },
-  bigNumber: { fontSize: 32, fontWeight: '700', color: '#FFFFFF' },
-  row: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap', gap: 8, paddingHorizontal: 8 },
-  dot: {
-    width: 40, height: 40, borderRadius: 20, backgroundColor: Colors.surface,
-    alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: Colors.border,
-  },
-  dotActive: { transform: [{ scale: 1.15 }], shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 6, elevation: 4 },
-  dotText: { fontSize: 14, fontWeight: '600', color: Colors.textLight },
-  dotTextFilled: { color: '#FFFFFF' },
-  labelsRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 16, paddingHorizontal: 8, width: '100%' },
+  label: { fontSize: 20, fontWeight: '700', color: Colors.text, marginBottom: 24, textAlign: 'center', lineHeight: 28 },
+  bigCircle: { width: 100, height: 100, borderRadius: 50, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
+  bigFace: { fontSize: 28, fontWeight: '700' },
+  valueLabel: { fontSize: 14, fontWeight: '600', color: Colors.textLight, marginBottom: 20 },
+  row: { flexDirection: 'row', gap: 10, paddingHorizontal: 16, paddingVertical: 4 },
+  dot: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  dotActive: { transform: [{ scale: 1.2 }], shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.15, shadowRadius: 8, elevation: 4 },
+  dotFace: { fontSize: 12, fontWeight: '700' },
+  labelsRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 16, width: '100%', paddingHorizontal: 16 },
   edgeLabel: { fontSize: 13, color: Colors.textMuted, fontWeight: '400' },
 });
 
@@ -777,61 +793,98 @@ function HomeScreen({ onOpenLog }) {
     return () => float.stop();
   }, []);
 
+  const greeting = new Date().getHours() < 12 ? 'Buenos dias' : new Date().getHours() < 18 ? 'Buenas tardes' : 'Buenas noches';
+
   return (
     <SafeAreaView style={homeStyles.container}>
-      <View style={homeStyles.centerContent}>
-        <Animated.Text style={[homeStyles.brandName, { opacity: glowAnim }]}>brisa</Animated.Text>
-        <TouchableOpacity activeOpacity={0.8} onPress={onOpenLog}>
-          <Animated.View style={[homeStyles.outerGlow, { opacity: glowAnim, transform: [{ scale: pulseAnim }, { translateY: floatAnim }] }]} />
-          <Animated.View style={[homeStyles.mainButton, { transform: [{ scale: pulseAnim }, { translateY: floatAnim }] }]}>
-            <View style={homeStyles.mainButtonInner}>
-              <Text style={homeStyles.mainButtonIcon}>~</Text>
-              <Text style={homeStyles.mainButtonText}>Registrar</Text>
-            </View>
+      <ScrollView contentContainerStyle={homeStyles.scrollContent} showsVerticalScrollIndicator={false}>
+        {/* Header */}
+        <Text style={homeStyles.greeting}>{greeting}</Text>
+        <Text style={homeStyles.bigQuestion}>Como te{'\n'}sientes hoy?</Text>
+
+        {/* Decorative blobs */}
+        <View style={homeStyles.blobRow}>
+          <Animated.View style={[homeStyles.blob, homeStyles.blobSage, { transform: [{ translateY: floatAnim }] }]} />
+          <Animated.View style={[homeStyles.blob, homeStyles.blobLavender, { transform: [{ translateY: floatAnim }, { scale: pulseAnim }] }]}>
+            <Text style={homeStyles.blobFace}>^.^</Text>
           </Animated.View>
+          <Animated.View style={[homeStyles.blob, homeStyles.blobBlush, { transform: [{ translateY: floatAnim }] }]} />
+        </View>
+
+        {/* Main CTA */}
+        <TouchableOpacity activeOpacity={0.85} onPress={onOpenLog} style={homeStyles.ctaCard}>
+          <View style={homeStyles.ctaInner}>
+            <Text style={homeStyles.ctaTitle}>Registrar</Text>
+            <Text style={homeStyles.ctaSub}>Toca cuando quieras</Text>
+          </View>
+          <View style={homeStyles.ctaArrow}><Text style={homeStyles.ctaArrowText}>{'>'}</Text></View>
         </TouchableOpacity>
-        <Animated.Text style={[homeStyles.subtitle, { opacity: glowAnim }]}>toca cuando quieras</Animated.Text>
-      </View>
+
+        {/* Info cards */}
+        <View style={homeStyles.cardsRow}>
+          <View style={[homeStyles.infoCard, { backgroundColor: Colors.sage }]}>
+            <Text style={homeStyles.infoCardEmoji}>~</Text>
+            <Text style={homeStyles.infoCardLabel}>Respira</Text>
+          </View>
+          <View style={[homeStyles.infoCard, { backgroundColor: Colors.lavender }]}>
+            <Text style={homeStyles.infoCardEmoji}>{'\u2661'}</Text>
+            <Text style={homeStyles.infoCardLabel}>Diario</Text>
+          </View>
+          <View style={[homeStyles.infoCard, { backgroundColor: Colors.honey }]}>
+            <Text style={homeStyles.infoCardEmoji}>{'...'}</Text>
+            <Text style={homeStyles.infoCardLabel}>Chat</Text>
+          </View>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const homeStyles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-  centerContent: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  brandName: { fontSize: 18, fontWeight: '300', color: Colors.textMuted, letterSpacing: 6, textTransform: 'lowercase', marginBottom: 48 },
-  outerGlow: { position: 'absolute', width: BUTTON_SIZE + 30, height: BUTTON_SIZE + 30, borderRadius: (BUTTON_SIZE + 30) / 2, backgroundColor: Colors.primaryLight, left: -15, top: -15 },
-  mainButton: { width: BUTTON_SIZE, height: BUTTON_SIZE, borderRadius: BUTTON_SIZE / 2, backgroundColor: Colors.primaryLight, alignItems: 'center', justifyContent: 'center', shadowColor: Colors.primary, shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.2, shadowRadius: 30, elevation: 8 },
-  mainButtonInner: { width: BUTTON_SIZE * 0.78, height: BUTTON_SIZE * 0.78, borderRadius: (BUTTON_SIZE * 0.78) / 2, backgroundColor: Colors.primary, alignItems: 'center', justifyContent: 'center' },
-  mainButtonIcon: { fontSize: 32, color: Colors.textOnPrimary, fontWeight: '300', marginBottom: 2 },
-  mainButtonText: { fontSize: 18, fontWeight: '600', color: Colors.textOnPrimary, letterSpacing: 1 },
-  subtitle: { fontSize: 14, fontWeight: '300', color: Colors.textMuted, marginTop: 40, letterSpacing: 2 },
+  scrollContent: { paddingHorizontal: 24, paddingTop: 40, paddingBottom: 24 },
+  greeting: { fontSize: 14, fontWeight: '400', color: Colors.textMuted, letterSpacing: 1, marginBottom: 8 },
+  bigQuestion: { fontSize: 34, fontWeight: '800', color: Colors.text, lineHeight: 42, marginBottom: 32 },
+  blobRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 16, marginBottom: 36, height: 80 },
+  blob: { width: 56, height: 56, borderRadius: 28 },
+  blobSage: { backgroundColor: Colors.sage, width: 40, height: 40, borderRadius: 20, marginTop: 20 },
+  blobLavender: { backgroundColor: Colors.lavender, width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center' },
+  blobBlush: { backgroundColor: Colors.blush, width: 48, height: 48, borderRadius: 24, marginTop: -10 },
+  blobFace: { fontSize: 22, fontWeight: '700', color: '#8B80A8' },
+  ctaCard: { backgroundColor: Colors.rose, borderRadius: 28, padding: 28, flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
+  ctaInner: { flex: 1 },
+  ctaTitle: { fontSize: 22, fontWeight: '700', color: '#FFFFFF', marginBottom: 4 },
+  ctaSub: { fontSize: 14, fontWeight: '400', color: 'rgba(255,255,255,0.8)' },
+  ctaArrow: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.3)', alignItems: 'center', justifyContent: 'center' },
+  ctaArrowText: { fontSize: 20, fontWeight: '700', color: '#FFFFFF' },
+  cardsRow: { flexDirection: 'row', gap: 12 },
+  infoCard: { flex: 1, borderRadius: 24, padding: 20, alignItems: 'center', minHeight: 100, justifyContent: 'center' },
+  infoCardEmoji: { fontSize: 24, marginBottom: 8 },
+  infoCardLabel: { fontSize: 13, fontWeight: '600', color: Colors.text },
 });
 
 
-// --- Pretty Bar Chart (Headspace-style, rounded, gradient colors) ---
-const CHART_COLORS = ['#E8B298', '#D4845A', '#B86B42', '#8B9E8B', '#C5D4C5', '#E8B86D', '#D47E7E', '#7DA67D'];
+// --- Bubble Chart (organic colored circles) ---
+const BUBBLE_COLORS = [Colors.sage, Colors.lavender, Colors.blush, Colors.honey, Colors.sky, Colors.mint, Colors.peach, Colors.rose];
 
-function SimpleBarChart({ labels, data, height = 160 }) {
+function SimpleBarChart({ labels, data, height = 180 }) {
   const max = Math.max(...data, 1);
   return (
-    <View style={{ backgroundColor: Colors.card, borderRadius: 24, padding: 20, borderWidth: 1, borderColor: Colors.border, shadowColor: Colors.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 1, shadowRadius: 8, elevation: 3 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'flex-end', height, gap: 6 }}>
+    <View style={{ backgroundColor: Colors.card, borderRadius: 28, padding: 24 }}>
+      {/* Bubble visualization */}
+      <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'center', height, gap: 8, flexWrap: 'wrap' }}>
         {data.map((val, i) => {
-          const barColor = CHART_COLORS[i % CHART_COLORS.length];
-          const pct = max > 0 ? (val / max) * 100 : 0;
+          const size = max > 0 ? Math.max(24, (val / max) * 64) : 24;
+          const color = BUBBLE_COLORS[i % BUBBLE_COLORS.length];
           return (
-            <View key={i} style={{ flex: 1, alignItems: 'center', justifyContent: 'flex-end', height: '100%' }}>
-              {val > 0 && <Text style={{ fontSize: 10, fontWeight: '600', color: barColor, marginBottom: 4 }}>{val}</Text>}
-              <View style={{ width: '65%', height: `${pct}%`, backgroundColor: barColor, borderRadius: 10, minHeight: val > 0 ? 6 : 0, opacity: 0.85 }} />
+            <View key={i} style={{ alignItems: 'center', justifyContent: 'flex-end' }}>
+              <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: color, alignItems: 'center', justifyContent: 'center', marginBottom: 6 }}>
+                {val > 0 && <Text style={{ fontSize: Math.max(9, size * 0.22), fontWeight: '700', color: Colors.text }}>{val}</Text>}
+              </View>
+              <Text style={{ fontSize: 9, color: Colors.textMuted, fontWeight: '500' }}>{labels[i] || ''}</Text>
             </View>
           );
         })}
-      </View>
-      <View style={{ flexDirection: 'row', marginTop: 10 }}>
-        {labels.map((l, i) => (
-          <Text key={i} style={{ flex: 1, textAlign: 'center', fontSize: 10, color: Colors.textMuted, fontWeight: '500' }}>{l}</Text>
-        ))}
       </View>
     </View>
   );
@@ -896,9 +949,9 @@ function DataScreen() {
       <ScrollView showsVerticalScrollIndicator={false}>
         <Text style={dataStyles.title}>{t('dataTitle')}</Text>
         <View style={dataStyles.summaryRow}>
-          <View style={dataStyles.summaryCard}><Text style={dataStyles.summaryNumber}>{logs.length}</Text><Text style={dataStyles.summaryLabel}>{t('dataTotalLogs')}</Text></View>
-          <View style={dataStyles.summaryCard}><Text style={dataStyles.summaryNumber}>{analytics.thisWeek}</Text><Text style={dataStyles.summaryLabel}>{t('dataThisWeek')}</Text></View>
-          <View style={dataStyles.summaryCard}><Text style={dataStyles.summaryNumber}>{analytics.thisMonth}</Text><Text style={dataStyles.summaryLabel}>{t('dataThisMonth')}</Text></View>
+          <View style={[dataStyles.summaryCard, { backgroundColor: Colors.sage }]}><Text style={dataStyles.summaryNumber}>{logs.length}</Text><Text style={dataStyles.summaryLabel}>{t('dataTotalLogs')}</Text></View>
+          <View style={[dataStyles.summaryCard, { backgroundColor: Colors.lavender }]}><Text style={dataStyles.summaryNumber}>{analytics.thisWeek}</Text><Text style={dataStyles.summaryLabel}>{t('dataThisWeek')}</Text></View>
+          <View style={[dataStyles.summaryCard, { backgroundColor: Colors.honey }]}><Text style={dataStyles.summaryNumber}>{analytics.thisMonth}</Text><Text style={dataStyles.summaryLabel}>{t('dataThisMonth')}</Text></View>
         </View>
         {analytics.feelData.length > 1 && (
           <View style={dataStyles.section}>
@@ -926,16 +979,16 @@ const dataStyles = StyleSheet.create({
   emptyIcon: { fontSize: 48, marginBottom: 16, color: Colors.textMuted },
   emptyText: { fontSize: 16, color: Colors.textLight, textAlign: 'center', lineHeight: 24 },
   summaryRow: { flexDirection: 'row', paddingHorizontal: 24, gap: 12, marginBottom: 24 },
-  summaryCard: { flex: 1, backgroundColor: Colors.card, borderRadius: 24, padding: 18, alignItems: 'center', borderWidth: 1, borderColor: Colors.border, shadowColor: Colors.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 1, shadowRadius: 8, elevation: 2 },
-  summaryNumber: { fontSize: 24, fontWeight: '700', color: Colors.primary },
+  summaryCard: { flex: 1, borderRadius: 24, padding: 18, alignItems: 'center' },
+  summaryNumber: { fontSize: 28, fontWeight: '800', color: Colors.text },
   summaryLabel: { fontSize: 11, color: Colors.textMuted, marginTop: 4, textAlign: 'center' },
   section: { paddingHorizontal: 24, marginBottom: 28 },
   sectionTitle: { fontSize: 18, fontWeight: '600', color: Colors.text, marginBottom: 16 },
   chart: { borderRadius: 16, paddingRight: 0 },
   barItem: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
   barLabel: { width: 90, fontSize: 14, color: Colors.text },
-  barTrack: { flex: 1, height: 12, backgroundColor: Colors.surface, borderRadius: 6, marginHorizontal: 8, overflow: 'hidden' },
-  barFill: { height: '100%', backgroundColor: Colors.accent, borderRadius: 6 },
+  barTrack: { flex: 1, height: 14, backgroundColor: Colors.surface, borderRadius: 7, marginHorizontal: 10, overflow: 'hidden' },
+  barFill: { height: '100%', backgroundColor: Colors.sage, borderRadius: 7 },
   barCount: { width: 30, fontSize: 14, fontWeight: '600', color: Colors.textLight, textAlign: 'right' },
 });
 
@@ -1000,12 +1053,12 @@ const journalStyles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 24, paddingTop: 20, paddingBottom: 16 },
   title: { fontSize: 28, fontWeight: '700', color: Colors.text },
-  newButton: { backgroundColor: Colors.primaryLight, paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20 },
-  newButtonText: { fontSize: 14, fontWeight: '600', color: Colors.primary },
+  newButton: { backgroundColor: Colors.rose, paddingVertical: 10, paddingHorizontal: 20, borderRadius: 24 },
+  newButtonText: { fontSize: 14, fontWeight: '600', color: '#FFFFFF' },
   list: { paddingHorizontal: 24, paddingBottom: 20 },
-  entry: { backgroundColor: Colors.card, borderRadius: 16, padding: 20, marginBottom: 12, borderWidth: 1, borderColor: Colors.border },
+  entry: { backgroundColor: Colors.card, borderRadius: 24, padding: 22, marginBottom: 12 },
   entryHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
-  entryDate: { fontSize: 13, fontWeight: '600', color: Colors.primary, textTransform: 'capitalize' },
+  entryDate: { fontSize: 13, fontWeight: '600', color: Colors.text, textTransform: 'capitalize' },
   entryTime: { fontSize: 13, color: Colors.textMuted },
   entryText: { fontSize: 16, color: Colors.text, lineHeight: 24 },
   emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
@@ -1092,15 +1145,15 @@ const chatStyles = StyleSheet.create({
   aiBubble: { justifyContent: 'flex-start' },
   aiAvatar: { fontSize: 20, marginRight: 8, marginBottom: 4, color: Colors.primary },
   messageContent: { maxWidth: '80%', borderRadius: 20, paddingVertical: 12, paddingHorizontal: 16 },
-  userContent: { backgroundColor: Colors.primary, borderBottomRightRadius: 4, marginLeft: 'auto' },
-  aiContent: { backgroundColor: Colors.card, borderBottomLeftRadius: 4, borderWidth: 1, borderColor: Colors.border },
+  userContent: { backgroundColor: Colors.rose, borderBottomRightRadius: 4, marginLeft: 'auto' },
+  aiContent: { backgroundColor: Colors.card, borderBottomLeftRadius: 4 },
   messageText: { fontSize: 15, color: Colors.text, lineHeight: 22 },
   userText: { color: Colors.textOnPrimary },
   typingContainer: { paddingHorizontal: 24, paddingBottom: 8 },
   typingText: { fontSize: 13, color: Colors.textMuted, fontStyle: 'italic' },
   inputBar: { flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: 16, paddingVertical: 12, borderTopWidth: 1, borderTopColor: Colors.divider, backgroundColor: Colors.background },
   input: { flex: 1, backgroundColor: Colors.card, borderRadius: 24, paddingHorizontal: 18, paddingVertical: 12, fontSize: 15, color: Colors.text, maxHeight: 100, borderWidth: 1, borderColor: Colors.border },
-  sendButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: Colors.primary, alignItems: 'center', justifyContent: 'center', marginLeft: 8 },
+  sendButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: Colors.text, alignItems: 'center', justifyContent: 'center', marginLeft: 8 },
   sendButtonDisabled: { backgroundColor: Colors.border },
   sendIcon: { fontSize: 18, fontWeight: '700', color: Colors.textOnPrimary },
 });
@@ -1155,21 +1208,21 @@ function ProfileScreen() {
 const profStyles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   title: { fontSize: 28, fontWeight: '700', color: Colors.text, paddingHorizontal: 24, paddingTop: 20, paddingBottom: 16 },
-  statsCard: { flexDirection: 'row', backgroundColor: Colors.card, marginHorizontal: 24, borderRadius: 20, padding: 24, borderWidth: 1, borderColor: Colors.border },
+  statsCard: { flexDirection: 'row', backgroundColor: Colors.card, marginHorizontal: 24, borderRadius: 28, padding: 24 },
   statItem: { flex: 1, alignItems: 'center' },
   statDivider: { width: 1, backgroundColor: Colors.divider },
-  statNumber: { fontSize: 28, fontWeight: '700', color: Colors.primary },
+  statNumber: { fontSize: 28, fontWeight: '800', color: Colors.text },
   statLabel: { fontSize: 12, color: Colors.textMuted, marginTop: 4 },
   streakVisual: { alignItems: 'center', paddingVertical: 28 },
-  streakBig: { fontSize: 52, fontWeight: '800', color: Colors.primary, marginVertical: 4 },
+  streakBig: { fontSize: 52, fontWeight: '800', color: Colors.text, marginVertical: 4 },
   streakDesc: { fontSize: 14, color: Colors.textLight },
   sectionTitle: { fontSize: 20, fontWeight: '600', color: Colors.text, paddingHorizontal: 24, marginBottom: 16, marginTop: 8 },
-  settingRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: Colors.card, marginHorizontal: 24, marginBottom: 8, borderRadius: 16, padding: 18, borderWidth: 1, borderColor: Colors.border },
-  settingBlock: { backgroundColor: Colors.card, marginHorizontal: 24, marginBottom: 8, borderRadius: 16, padding: 18, borderWidth: 1, borderColor: Colors.border },
+  settingRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: Colors.card, marginHorizontal: 24, marginBottom: 8, borderRadius: 20, padding: 18 },
+  settingBlock: { backgroundColor: Colors.card, marginHorizontal: 24, marginBottom: 8, borderRadius: 20, padding: 18 },
   settingLabel: { fontSize: 16, fontWeight: '500', color: Colors.text },
   settingDesc: { fontSize: 13, color: Colors.textMuted, marginTop: 2 },
-  langToggle: { backgroundColor: Colors.primaryLight, paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20 },
-  langToggleText: { fontSize: 14, fontWeight: '700', color: Colors.primary },
+  langToggle: { backgroundColor: Colors.sage, paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20 },
+  langToggleText: { fontSize: 14, fontWeight: '700', color: Colors.text },
   timeButton: { backgroundColor: Colors.surface, paddingVertical: 8, paddingHorizontal: 16, borderRadius: 12 },
   timeText: { fontSize: 16, fontWeight: '600', color: Colors.primary },
   messageInput: { backgroundColor: Colors.surface, borderRadius: 12, padding: 14, fontSize: 15, color: Colors.text, marginTop: 10, minHeight: 60 },
@@ -1405,7 +1458,7 @@ const logStyles = StyleSheet.create({
   optionsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 8, gap: 12 },
   progressBar: { flex: 1, height: 3, backgroundColor: Colors.border, borderRadius: 2, overflow: 'hidden' },
-  progressFill: { height: '100%', backgroundColor: Colors.primary, borderRadius: 2 },
+  progressFill: { height: '100%', backgroundColor: Colors.rose, borderRadius: 2 },
   stepCount: { fontSize: 12, color: Colors.textMuted, minWidth: 35, textAlign: 'right' },
   scrollContent: { flex: 1 },
   scrollInner: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 20, paddingBottom: 20 },
@@ -1413,7 +1466,7 @@ const logStyles = StyleSheet.create({
   stepTitle: { fontSize: 22, fontWeight: '600', color: Colors.text, marginBottom: 24, textAlign: 'center' },
   stepLabel: { fontSize: 16, color: Colors.textLight, marginBottom: 12, lineHeight: 24, textAlign: 'center' },
   inputLabel: { fontSize: 14, fontWeight: '500', color: Colors.textLight, marginTop: 12, marginBottom: 4 },
-  rideWave: { fontSize: 20, fontWeight: '700', color: Colors.primary, textAlign: 'center', marginBottom: 20, letterSpacing: 1 },
+  rideWave: { fontSize: 20, fontWeight: '800', color: Colors.text, textAlign: 'center', marginBottom: 20, letterSpacing: 1 },
   stepMessage: { fontSize: 16, color: Colors.text, textAlign: 'center', lineHeight: 26, marginBottom: 28 },
   blockerButtons: { gap: 8 },
   yesNoRow: { flexDirection: 'row', gap: 16, justifyContent: 'center' },
@@ -1424,8 +1477,8 @@ const logStyles = StyleSheet.create({
   messageIcon: { fontSize: 36, textAlign: 'center', marginBottom: 20, color: Colors.primary },
   messageText: { fontSize: 18, color: Colors.text, textAlign: 'center', lineHeight: 28 },
   celebrateContent: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20 },
-  celebrateSymbol: { fontSize: 48, color: Colors.primary, marginBottom: 16, fontWeight: '300' },
-  celebrateTitle: { fontSize: 26, fontWeight: '600', color: Colors.primary, marginBottom: 12, textAlign: 'center' },
+  celebrateSymbol: { fontSize: 48, color: Colors.sage, marginBottom: 16, fontWeight: '300' },
+  celebrateTitle: { fontSize: 28, fontWeight: '800', color: Colors.text, marginBottom: 12, textAlign: 'center' },
   celebrateMessage: { fontSize: 16, color: Colors.textLight, textAlign: 'center', lineHeight: 26 },
   logSaved: { fontSize: 14, color: Colors.textMuted, marginTop: 20 },
   breakOptions: { gap: 8, marginTop: 20 },
@@ -1437,8 +1490,8 @@ const logStyles = StyleSheet.create({
   nav: { flexDirection: 'row', paddingHorizontal: 24, paddingVertical: 16, gap: 12, borderTopWidth: 1, borderTopColor: Colors.divider },
   backButton: { paddingVertical: 16, paddingHorizontal: 24, borderRadius: 16, backgroundColor: Colors.surface },
   backText: { fontSize: 16, fontWeight: '500', color: Colors.textLight },
-  nextButton: { flex: 1, paddingVertical: 16, borderRadius: 16, backgroundColor: Colors.primary, alignItems: 'center' },
-  doneButton: { backgroundColor: Colors.success },
+  nextButton: { flex: 1, paddingVertical: 16, borderRadius: 28, backgroundColor: Colors.text, alignItems: 'center' },
+  doneButton: { backgroundColor: Colors.sage },
   nextText: { fontSize: 16, fontWeight: '600', color: Colors.textOnPrimary },
   timerContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 20 },
   timerLabel: { fontSize: 16, color: Colors.text, textAlign: 'center', lineHeight: 26, marginBottom: 30 },
@@ -1506,15 +1559,15 @@ export default function App() {
 }
 
 const tabStyles = StyleSheet.create({
-  bar: { flexDirection: 'row', backgroundColor: Colors.card, borderTopColor: Colors.divider, borderTopWidth: 1, paddingTop: 6, paddingBottom: 10, height: 80, alignItems: 'center' },
+  bar: { flexDirection: 'row', backgroundColor: Colors.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingTop: 10, paddingBottom: 12, height: 82, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.05, shadowRadius: 12, elevation: 8 },
   tab: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  mainIcon: { width: 52, height: 52, borderRadius: 26, backgroundColor: Colors.primaryLight, alignItems: 'center', justifyContent: 'center', marginTop: -18, shadowColor: Colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 12, elevation: 6 },
-  mainIconActive: { backgroundColor: Colors.primary },
-  mainSymbol: { fontSize: 24, fontWeight: '300', color: Colors.textOnPrimary },
-  tabSymbol: { fontSize: 16, fontWeight: '300', letterSpacing: 2 },
-  tabSymbolActive: { color: Colors.primary },
-  tabSymbolInactive: { color: Colors.textMuted, opacity: 0.6 },
-  tabLabel: { fontSize: 9, fontWeight: '400', marginTop: 3, letterSpacing: 1, color: Colors.textMuted, opacity: 0.6 },
-  tabLabelActive: { color: Colors.primary, opacity: 1 },
-  activeDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: Colors.primary, marginTop: 4 },
+  mainIcon: { width: 56, height: 56, borderRadius: 28, backgroundColor: Colors.rose, alignItems: 'center', justifyContent: 'center', marginTop: -24, shadowColor: Colors.rose, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 6 },
+  mainIconActive: { backgroundColor: Colors.text },
+  mainSymbol: { fontSize: 24, fontWeight: '300', color: '#FFFFFF' },
+  tabSymbol: { fontSize: 16, fontWeight: '400' },
+  tabSymbolActive: { color: Colors.text },
+  tabSymbolInactive: { color: Colors.textMuted },
+  tabLabel: { fontSize: 10, fontWeight: '500', marginTop: 4, color: Colors.textMuted },
+  tabLabelActive: { color: Colors.text },
+  activeDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: Colors.text, marginTop: 4 },
 });
