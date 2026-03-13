@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createStackNavigator } from '@react-navigation/stack';
 import { Text, View, StyleSheet, StatusBar } from 'react-native';
 import { AppProvider } from './src/context/AppContext';
 import Colors from './src/constants/colors';
@@ -15,7 +15,7 @@ import ChatScreen from './src/screens/ChatScreen';
 import LogFlowScreen from './src/screens/LogFlowScreen';
 
 const Tab = createBottomTabNavigator();
-const Stack = createNativeStackNavigator();
+const Stack = createStackNavigator();
 
 // Softer, calming tab icons (simple unicode symbols)
 const TAB_ICONS = {
