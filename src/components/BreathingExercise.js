@@ -1,7 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated, TouchableOpacity, Dimensions } from 'react-native';
-import * as Haptics from 'expo-haptics';
+import { View, Text, StyleSheet, Animated, TouchableOpacity, Dimensions, Platform } from 'react-native';
 import Colors from '../constants/colors';
+
+const triggerHaptic = () => {
+  if (Platform.OS === 'web') return;
+  import('expo-haptics').then(Haptics =>
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+  ).catch(() => {});
+};
 import { useApp } from '../context/AppContext';
 
 const { width } = Dimensions.get('window');
@@ -56,7 +62,7 @@ export default function BreathingExercise({ onComplete }) {
       // Inhale — 4 seconds
       setPhase('inhale');
       setCycleCount(cyclesDone + 1);
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+      triggerHaptic();
       Animated.parallel([
         Animated.timing(scale, { toValue: 1, duration: INHALE_MS, useNativeDriver: true }),
         Animated.timing(glowOpacity, { toValue: 0.8, duration: INHALE_MS, useNativeDriver: true }),
@@ -66,7 +72,7 @@ export default function BreathingExercise({ onComplete }) {
       // Exhale — 6 seconds (starts after inhale)
       timer = setTimeout(() => {
         setPhase('exhale');
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+        triggerHaptic();
         Animated.parallel([
           Animated.timing(scale, { toValue: 0.4, duration: EXHALE_MS, useNativeDriver: true }),
           Animated.timing(glowOpacity, { toValue: 0.3, duration: EXHALE_MS, useNativeDriver: true }),
